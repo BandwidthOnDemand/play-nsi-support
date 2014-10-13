@@ -2,6 +2,8 @@ name := "nsi-scala"
 
 version := "1.0-SNAPSHOT"
 
+organization := "nl.surfnet"
+
 val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
 
 libraryDependencies ++= Seq(

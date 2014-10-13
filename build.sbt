@@ -1,4 +1,4 @@
-name := "nsi-scala"
+name := "play-nsi-support"
 
 version := "1.0-SNAPSHOT"
 

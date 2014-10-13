@@ -1,7 +1,5 @@
 name := "play-nsi-support"
 
-version := "1.0-SNAPSHOT"
-
 organization := "nl.surfnet"
 
 libraryDependencies ++= Seq(
@@ -27,3 +25,5 @@ resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
 publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
 
 testFrameworks in Test := Seq(TestFrameworks.Specs2)
+
+releaseSettings

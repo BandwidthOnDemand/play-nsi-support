@@ -4,8 +4,6 @@ version := "1.0-SNAPSHOT"
 
 organization := "nl.surfnet"
 
-val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
-
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "0.3.3",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.2",
@@ -19,11 +17,13 @@ scalaVersion := "2.11.2"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint")
 
-resolvers ++= Seq(
-    "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty",
-    "SURFnet BoD Snapshots" at s"$nexusBaseUri/public-snapshots",
-    "SURFnet BoD Releases" at s"$nexusBaseUri/public-releases"
-)
+val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
+val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
+val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
+val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
+
+resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
+
+publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
 
 testFrameworks in Test := Seq(TestFrameworks.Specs2)
-

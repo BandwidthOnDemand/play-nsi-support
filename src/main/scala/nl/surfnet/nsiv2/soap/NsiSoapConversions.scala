@@ -84,33 +84,31 @@ object NsiSoapConversions {
     result.getNode().asInstanceOf[Document].getDocumentElement()
   }
 
-  implicit val NsiAcknowledgementOperationToElement = Conversion.build[NsiAcknowledgement, Element] { ack =>
-    ack match {
-      case GenericAck() =>
-        marshal(typesFactory.createAcknowledgment(new GenericAcknowledgmentType()))
-      case ReserveResponse(connectionId) =>
-        marshal(typesFactory.createReserveResponse(new ReserveResponseType().withConnectionId(connectionId)))
-      case QuerySummarySyncConfirmed(reservations) =>
-        marshal(typesFactory.createQuerySummarySyncConfirmed(new QuerySummaryConfirmedType().withReservation(reservations.asJava)))
-      case QueryNotificationSyncConfirmed(notifications) =>
-        marshal(typesFactory.createQueryNotificationSyncConfirmed(new QueryNotificationConfirmedType().withErrorEventOrReserveTimeoutOrDataPlaneStateChange(notifications.asJava)))
-      case QueryResultSyncConfirmed(results) =>
-        marshal(typesFactory.createQueryResultSyncConfirmed(new QueryResultConfirmedType().withResult(results.asJava)))
-      case ErrorAck(error) =>
-        marshal(typesFactory.createError(error))
-      case ServiceException(exception) =>
-        // Wrap the service exception in a SOAP Fault element using the Java DOM API.
-        marshal(typesFactory.createServiceException(exception)).flatMap { detailBody =>
-          Try {
-            val doc = createDocument
-            val fault = doc.createElementNS("http://www.w3.org/2003/05/soap-envelope", "S:Fault").tap(doc.appendChild)
-            fault.appendChild(doc.createElement("faultcode")).appendChild(doc.createTextNode("S:Server")) // FIXME or S:Client?
-            fault.appendChild(doc.createElement("faultstring")).appendChild(doc.createTextNode(exception.getText()))
-            fault.appendChild(doc.createElement("detail")).appendChild(doc.importNode(detailBody, true))
-            doc.getDocumentElement()
-          }
+  implicit val NsiAcknowledgementOperationToElement = Conversion.build[NsiAcknowledgement, Element] {
+    case GenericAck() =>
+      marshal(typesFactory.createAcknowledgment(new GenericAcknowledgmentType()))
+    case ReserveResponse(connectionId) =>
+      marshal(typesFactory.createReserveResponse(new ReserveResponseType().withConnectionId(connectionId)))
+    case QuerySummarySyncConfirmed(reservations) =>
+      marshal(typesFactory.createQuerySummarySyncConfirmed(new QuerySummaryConfirmedType().withReservation(reservations.asJava)))
+    case QueryNotificationSyncConfirmed(notifications) =>
+      marshal(typesFactory.createQueryNotificationSyncConfirmed(new QueryNotificationConfirmedType().withErrorEventOrReserveTimeoutOrDataPlaneStateChange(notifications.asJava)))
+    case QueryResultSyncConfirmed(results) =>
+      marshal(typesFactory.createQueryResultSyncConfirmed(new QueryResultConfirmedType().withResult(results.asJava)))
+    case ErrorAck(error) =>
+      marshal(typesFactory.createError(error))
+    case ServiceException(exception) =>
+      // Wrap the service exception in a SOAP Fault element using the Java DOM API.
+      marshal(typesFactory.createServiceException(exception)).flatMap { detailBody =>
+        Try {
+          val doc = createDocument
+          val fault = doc.createElementNS("http://www.w3.org/2003/05/soap-envelope", "S:Fault").tap(doc.appendChild)
+          fault.appendChild(doc.createElement("faultcode")).appendChild(doc.createTextNode("S:Server")) // FIXME or S:Client?
+          fault.appendChild(doc.createElement("faultstring")).appendChild(doc.createTextNode(exception.getText()))
+          fault.appendChild(doc.createElement("detail")).appendChild(doc.importNode(detailBody, true))
+          doc.getDocumentElement()
         }
-    }
+      }
   } {
     messageFactories(Map[String, NsiMessageParser[NsiAcknowledgement]](
       "acknowledgment" -> NsiMessageParser { (body: GenericAcknowledgmentType) => Success(GenericAck()) },

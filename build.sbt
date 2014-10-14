@@ -7,6 +7,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.2",
   "com.typesafe.play" %% "play" % "2.3.3",
   "com.typesafe.play" %% "play-test" % "2.3.3",
+  "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
   "org.specs2" %% "specs2-scalacheck" % "2.3.13" % "test",
   "org.specs2" %% "specs2-junit" % "2.3.13" % "test"
 )

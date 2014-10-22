@@ -364,4 +364,58 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       new String(output, "UTF-8") must contain("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436")
     }
   }
+
+  "roundtrip conversion" should {
+    "work for real example" in {
+      val input = <soap:Envelope xmlns:ctypes="http://schemas.ogf.org/nsi/2013/12/connection/types" xmlns:header="http://schemas.ogf.org/nsi/2013/12/framework/headers" xmlns:ns2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ns3="http://nordu.net/namespaces/2013/12/gnsbod" xmlns:p2psrv="http://schemas.ogf.org/nsi/2013/12/services/point2point" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+   <soap:Header>
+      <header:nsiHeader>
+         <protocolVersion>application/vnd.ogf.nsi.cs.v2.provider+soap</protocolVersion>
+         <correlationId>urn:uuid:4cecd9a1-59fb-11e4-a2f2-7cd1c3dc3ba7</correlationId>
+         <requesterNSA>urn:ogf:network:OpenNSA-CLI</requesterNSA>
+         <providerNSA>urn:ogf:network:netherlight.net:2013:nsa:safnari</providerNSA>
+         <replyTo>http://127.0.0.1:7000/NSI/services/RequesterService2</replyTo>
+         <sessionSecurityAttr>
+            <ns2:Attribute Name="token">
+               <ns2:AttributeValue>621495cf-17c6-498c-870a-3c5b2d7ffd17</ns2:AttributeValue>
+            </ns2:Attribute>
+         </sessionSecurityAttr>
+         <sessionSecurityAttr>
+            <ns2:Attribute Name="user">
+               <ns2:AttributeValue>hanst</ns2:AttributeValue>
+            </ns2:Attribute>
+         </sessionSecurityAttr>
+         <ns3:ConnectionTrace>
+            <Connection index="0">urn:ogf:network:OpenNSA-CLI:1</Connection>
+         </ns3:ConnectionTrace>
+      </header:nsiHeader>
+   </soap:Header>
+   <soap:Body>
+      <ctypes:reserve>
+         <description>surfnet.nl:1990:testbed:3878?vlan=2019 - surfnet.nl:1990:testbed:3921?vlan=2000</description>
+         <criteria version="0">
+            <schedule>
+               <startTime>2014-10-22T16:16:30+00:00</startTime>
+               <endTime>2014-10-22T16:46:30+00:00</endTime>
+            </schedule>
+            <serviceType>http://services.ogf.org/nsi/2013/12/descriptions/EVTS.A-GOLE</serviceType>
+            <p2psrv:p2ps>
+               <capacity>10</capacity>
+               <directionality>Bidirectional</directionality>
+               <sourceSTP>urn:ogf:network:surfnet.nl:1990:testbed:3878?vlan=2019</sourceSTP>
+               <destSTP>urn:ogf:network:surfnet.nl:1990:testbed:3921?vlan=2000</destSTP>
+            </p2psrv:p2ps>
+         </criteria>
+      </ctypes:reserve>
+   </soap:Body>
+</soap:Envelope>.toString
+
+        val converter = NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(NsiXmlDocumentConversion)
+        val Success(doc) = converter.invert(input.getBytes("UTF-8"))
+        val Success(arr) = converter(doc)
+
+        val converted = new String(arr, "UTF-8").pp
+        converter.invert(arr) must beSuccessfulTry
+    }.pendingUntilFixed
+  }
 }

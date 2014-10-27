@@ -28,3 +28,5 @@ publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetRel
 testFrameworks in Test := Seq(TestFrameworks.Specs2)
 
 releaseSettings
+
+net.virtualvoid.sbt.graph.Plugin.graphSettings

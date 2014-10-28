@@ -23,6 +23,8 @@ val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
 
 resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
 publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
 
 testFrameworks in Test := Seq(TestFrameworks.Specs2)

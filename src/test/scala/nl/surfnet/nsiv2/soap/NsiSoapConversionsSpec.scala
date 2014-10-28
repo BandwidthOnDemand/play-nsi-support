@@ -414,8 +414,7 @@ class NsiSoapConversionsSpec extends mutable.Specification {
         val Success(doc) = converter.invert(input.getBytes("UTF-8"))
         val Success(arr) = converter(doc)
 
-        val converted = new String(arr, "UTF-8").pp
         converter.invert(arr) must beSuccessfulTry
-    }.pendingUntilFixed
+    }
   }
 }

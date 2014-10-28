@@ -62,7 +62,8 @@ object NsiSoapConversions {
   private val headersFactory = new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
   private val pointToPointServiceFactory = new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
   private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
-  private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory).map(_.getClass().getPackage().getName())
+  private val samlFactory = new oasis.names.tc.saml._2_0.assertion.ObjectFactory()
+  private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory).map(_.getClass().getPackage().getName())
 
   def NsiProviderMessageToDocument[T](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiProviderMessage[T], Document] = (Conversion.build[NsiProviderMessage[T], (Option[NsiHeaders], T)] {
     message => Success((Some(message.headers), message.body))

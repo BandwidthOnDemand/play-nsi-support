@@ -3,7 +3,7 @@ name := "play-nsi-support"
 organization := "nl.surfnet"
 
 libraryDependencies ++= Seq(
-  "nl.surfnet.bod" % "bod-nsi" % "0.3.5",
+  "nl.surfnet.bod" % "bod-nsi" % "0.3.6",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.2",
   "com.typesafe.play" %% "play" % "2.3.3",
   "com.typesafe.play" %% "play-test" % "2.3.3",

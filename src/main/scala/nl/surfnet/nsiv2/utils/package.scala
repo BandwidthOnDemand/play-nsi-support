@@ -1,7 +1,8 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
-
+import javax.xml.datatype.XMLGregorianCalendar
+import org.joda.time.DateTime
 import scala.util.{Failure, Success, Try}
 
 package object utils {
@@ -29,5 +30,16 @@ package object utils {
       case Failure(t) => Left(t)
       case Success(a) => Right(a)
     }
+  }
+
+  implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar] {
+    def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
+  }
+  implicit object DateTimeOrdering extends Ordering[DateTime] {
+    def compare(x: DateTime, y: DateTime): Int = x compareTo y
+  }
+
+  implicit class ReadableInstantOps(instant: org.joda.time.ReadableInstant) {
+    def toSqlTimestamp = new java.sql.Timestamp(instant.getMillis)
   }
 }

@@ -69,12 +69,12 @@ object ExtraBodyParsers {
     }.map(Results.Ok(_))
   }
 
-  def soap(parser: Conversion[Document, Array[Byte]], maxLength: Int = BodyParsers.parse.DEFAULT_MAX_TEXT_LENGTH): BodyParser[Document] = when(
+  def soap[T](parser: Conversion[T, Array[Byte]], maxLength: Int = BodyParsers.parse.DEFAULT_MAX_TEXT_LENGTH): BodyParser[T] = when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
-    parser = tolerantSoap(parser: Conversion[Document, Array[Byte]], maxLength),
+    parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
-  def tolerantSoap(parser: Conversion[Document, Array[Byte]], maxLength: Int): BodyParser[Document] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
+  def tolerantSoap[T](parser: Conversion[T, Array[Byte]], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
     import scala.language.reflectiveCalls
     Traversable.takeUpTo[Array[Byte]](maxLength)
       .apply(

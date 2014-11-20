@@ -42,7 +42,7 @@ object MessageData {
   implicit val ServiceExceptionTypeFormat: Format[ServiceExceptionType] = conversionToFormat(Conversion[ServiceExceptionType, String])
 }
 
-case class MessageRecord[T](id: Long, createdAt: Instant, aggregatedConnectionId: ConnectionId, message: T) {
+case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T) {
   def map[B](f: T => B) = copy(message = f(message))
 }
 
@@ -57,42 +57,42 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     }
   }
 
-  def create(aggregatedConnectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = DB.withTransaction(databaseName) { implicit connection =>
-    SQL("""INSERT INTO connections (aggregated_connection_id, created_at, requester_nsa) VALUES ({aggregated_connection_id}, {created_at}, {requester_nsa})""")
-      .on('aggregated_connection_id -> aggregatedConnectionId, 'created_at -> createdAt.toSqlTimestamp, 'requester_nsa -> requesterNsa)
+  def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = DB.withTransaction(databaseName) { implicit connection =>
+    SQL("""INSERT INTO connections (connection_id, created_at, requester_nsa) VALUES ({connection_id}, {created_at}, {requester_nsa})""")
+      .on('connection_id -> connectionId, 'created_at -> createdAt.toSqlTimestamp, 'requester_nsa -> requesterNsa)
       .executeInsert()
   }
 
-  def storeInboundWithOutboundMessages(aggregatedConnectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = DB.withTransaction(databaseName) { implicit connection =>
-    val connectionPk = SQL("""SELECT id FROM connections WHERE aggregated_connection_id = {aggregated_connection_id} AND deleted_at IS NULL""")
-      .on('aggregated_connection_id -> aggregatedConnectionId)
+  def storeInboundWithOutboundMessages(connectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = DB.withTransaction(databaseName) { implicit connection =>
+    val connectionPk = SQL("""SELECT id FROM connections WHERE connection_id = {connection_id} AND deleted_at IS NULL""")
+      .on('connection_id -> connectionId)
       .as(get[Long]("id").singleOpt)
       .getOrElse {
-        throw new IllegalArgumentException(s"connection $aggregatedConnectionId does not exist or is already deleted")
+        throw new IllegalArgumentException(s"connection $connectionId does not exist or is already deleted")
       }
     val inboundId = store(connectionPk, createdAt, inbound, None)
     outbound.foreach(store(connectionPk, createdAt, _, Some(inboundId)))
   }
 
-  def loadAll(aggregatedConnectionId: ConnectionId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
+  def loadAll(connectionId: ConnectionId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
     SQL("""
-        SELECT m.id, c.aggregated_connection_id, m.created_at, m.correlation_id, m.type, m.content
+        SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
-         WHERE c.aggregated_connection_id = {aggregated_connection_id}
+         WHERE c.connection_id = {connection_id}
          ORDER BY m.id ASC""").on(
-      'aggregated_connection_id -> aggregatedConnectionId)
+      'connection_id -> connectionId)
       .as(recordParser.*)
       .map(_.map(message => conversion.invert(message).get)) // FIXME error handling
   }
 
   def loadEverything(): Seq[(ConnectionId, Seq[MessageRecord[M]])] = DB.withConnection(databaseName) { implicit connection =>
     SQL("""
-        SELECT m.id, c.aggregated_connection_id, m.created_at, m.correlation_id, m.type, m.content
+        SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
          WHERE c.deleted_at IS NULL
-         ORDER BY c.aggregated_connection_id ASC, m.id ASC""")
+         ORDER BY m.connection_id ASC, m.id ASC""")
       .as(recordParser.*)
-      .groupBy(_.aggregatedConnectionId)
+      .groupBy(_.connectionId)
       .map {
         case (connectionId, records) =>
           connectionId -> records.flatMap { record =>
@@ -102,15 +102,15 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
       }(collection.breakOut)
   }
 
-  def delete(aggregatedConnectionId: ConnectionId, deletedAt: Instant): Unit = DB.withTransaction(databaseName) { implicit connection =>
-    SQL("""UPDATE connections SET deleted_at = {deleted_at} WHERE aggregated_connection_id = {aggregated_connection_id} AND deleted_at IS NULL""")
-      .on('aggregated_connection_id -> aggregatedConnectionId, 'deleted_at -> deletedAt.toSqlTimestamp)
-      .executeUpdate().tap(n => Logger.debug(s"Deleted connection $aggregatedConnectionId"))
+  def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = DB.withTransaction(databaseName) { implicit connection =>
+    SQL("""UPDATE connections SET deleted_at = {deleted_at} WHERE connection_id = {connection_id} AND deleted_at IS NULL""")
+      .on('connection_id -> connectionId, 'deleted_at -> deletedAt.toSqlTimestamp)
+      .executeUpdate().tap(n => Logger.debug(s"Deleted connection $connectionId"))
   }
 
-  private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("aggregated_connection_id") ~ get[UUID]("correlation_id") ~ str("type") ~ str("content")).map {
-    case id ~ createdAt ~ aggregatedConnectionId ~ correlationId ~ tpe ~ content =>
-      MessageRecord(id, new Instant(createdAt), aggregatedConnectionId, MessageData(CorrelationId.fromUuid(correlationId), tpe, content))
+  private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("connection_id") ~ get[UUID]("correlation_id") ~ str("type") ~ str("content")).map {
+    case id ~ createdAt ~ connectionId ~ correlationId ~ tpe ~ content =>
+      MessageRecord(id, new Instant(createdAt), connectionId, MessageData(CorrelationId.fromUuid(correlationId), tpe, content))
   }
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(implicit connection: Connection) = {

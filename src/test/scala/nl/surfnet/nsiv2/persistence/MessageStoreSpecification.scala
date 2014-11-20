@@ -36,29 +36,29 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
 
   "MessageStore" should {
     "fail to store message for unknown connection" in new Fixture() {
-      AsResult(propNoShrink { (message: Message) =>
+      propNoShrink { (message: Message) =>
         val unknownConnectionId = newConnectionId
 
         messageStore.storeInboundWithOutboundMessages(unknownConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
-      }.set(minTestsOk = 1))
+      }.set(minTestsOk = 1)
     }
 
     "fail to store a message for a deleted connection" in new Fixture() { 
-      AsResult(propNoShrink { (message: Message) =>
+      propNoShrink { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 
         messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
-      }.set(minTestsOk = 1))
+      }.set(minTestsOk = 1)
     }
 
     "append new messages at the end" in new Fixture {
-      AsResult(propNoShrink { (message: Message) =>
+      propNoShrink { (message: Message) =>
         messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must not(throwA[Exception])
 
         val loaded = messageStore.loadAll(aggregatedConnectionId)
         loaded.map(_.createdAt).lastOption must beSome(timestamp)
-        loaded.map(_.message).lastOption must beSome(message)
-      }.set(minTestsOk = 10))
+        loaded.map(_.message).lastOption aka "last appended message" must beSome(message)
+      }.set(minTestsOk = 10)
     }
   }
 }

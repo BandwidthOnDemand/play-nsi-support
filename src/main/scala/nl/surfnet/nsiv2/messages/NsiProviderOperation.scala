@@ -3,7 +3,7 @@ package nl.surfnet.nsiv2.messages
 import org.ogf.schemas.nsi._2013._12.connection.types.{ReservationConfirmCriteriaType, ReserveType}
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 
-sealed trait NsiProviderOperation {
+sealed trait NsiProviderOperation extends NsiOperation {
   def action: String = this.getClass().getSimpleName()
   final def soapActionUrl: String = {
     s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"

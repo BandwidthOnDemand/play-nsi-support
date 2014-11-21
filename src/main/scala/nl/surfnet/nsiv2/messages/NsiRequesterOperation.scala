@@ -2,7 +2,7 @@ package nl.surfnet.nsiv2.messages
 
 import org.ogf.schemas.nsi._2013._12.connection.types._
 
-sealed trait NsiRequesterOperation {
+sealed trait NsiRequesterOperation extends NsiOperation {
   final def action = this.getClass().getSimpleName()
   final def soapActionUrl: String = s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"
 }
@@ -33,7 +33,7 @@ case class QueryRecursiveConfirmed(reservations: Seq[QueryRecursiveResultType]) 
 case class QueryNotificationConfirmed(notifications: Seq[NotificationBaseType]) extends NsiRequesterOperation
 case class QueryResultConfirmed(results: Seq[QueryResultResponseType]) extends NsiRequesterOperation
 
-case class Error(error: GenericErrorType) extends NsiRequesterOperation
+case class ErrorReply(error: GenericErrorType) extends NsiRequesterOperation
 
 case class ErrorEvent(override val notification: ErrorEventType) extends NsiNotification {
   override def connectionId = notification.getConnectionId()

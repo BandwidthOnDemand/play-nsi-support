@@ -62,7 +62,7 @@ object ExtraBodyParsers {
     }
   }
 
-  def NsiEndPoint[M, T[_] <: NsiMessage[_]](parser: BodyParser[T[M]])(action: T[M] => Future[T[NsiAcknowledgement]])(implicit conversion: Conversion[T[NsiAcknowledgement], Document]) = Action.async(parser) { request =>
+  def NsiEndPoint[M <: NsiOperation, T[_ <: NsiOperation] <: NsiMessage[_]](parser: BodyParser[T[M]])(action: T[M] => Future[T[NsiAcknowledgement]])(implicit conversion: Conversion[T[NsiAcknowledgement], Document]) = Action.async(parser) { request =>
     action(request.body).map { ack =>
       Logger.debug(s"Ack ${request.remoteAddress} with ${Conversion[T[NsiAcknowledgement], String].apply(ack)}")
       ack

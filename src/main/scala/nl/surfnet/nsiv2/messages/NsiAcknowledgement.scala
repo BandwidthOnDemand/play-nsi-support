@@ -3,7 +3,7 @@ package nl.surfnet.nsiv2.messages
 import org.ogf.schemas.nsi._2013._12.connection.types._
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 
-sealed trait NsiAcknowledgement {
+sealed trait NsiAcknowledgement extends NsiOperation {
   final def action: String = this.getClass.getSimpleName
 }
 case class GenericAck() extends NsiAcknowledgement

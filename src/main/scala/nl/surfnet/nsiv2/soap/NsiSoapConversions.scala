@@ -65,14 +65,14 @@ object NsiSoapConversions {
   private val samlFactory = new oasis.names.tc.saml._2_0.assertion.ObjectFactory()
   private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory).map(_.getClass().getPackage().getName())
 
-  def NsiProviderMessageToDocument[T](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiProviderMessage[T], Document] = (Conversion.build[NsiProviderMessage[T], (Option[NsiHeaders], T)] {
+  def NsiProviderMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiProviderMessage[T], Document] = (Conversion.build[NsiProviderMessage[T], (Option[NsiHeaders], T)] {
     message => Success((Some(message.headers), message.body))
   } {
     case (headers, body) =>
       headers.orElse(defaultHeaders).map(headers => Success(NsiProviderMessage(headers, body))).getOrElse(Failure(ErrorMessage("missing NSI headers")))
   }).andThen(NsiHeadersAndBodyToDocument[T](bodyConversion))
 
-  def NsiRequesterMessageToDocument[T](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiRequesterMessage[T], Document] = (Conversion.build[NsiRequesterMessage[T], (Option[NsiHeaders], T)] {
+  def NsiRequesterMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiRequesterMessage[T], Document] = (Conversion.build[NsiRequesterMessage[T], (Option[NsiHeaders], T)] {
     message => Success((Some(message.headers), message.body))
   } {
     case (headers, body) =>
@@ -233,7 +233,7 @@ object NsiSoapConversions {
       case QueryRecursiveConfirmed(reservations)     => typesFactory.createQueryRecursiveConfirmed(new QueryRecursiveConfirmedType().withReservation(reservations.asJava))
       case QueryNotificationConfirmed(notifications) => typesFactory.createQueryNotificationConfirmed(new QueryNotificationConfirmedType().withErrorEventOrReserveTimeoutOrDataPlaneStateChange(notifications.asJava))
       case QueryResultConfirmed(results)             => typesFactory.createQueryResultConfirmed(new QueryResultConfirmedType().withResult(results.asJava))
-      case Error(error)                              => typesFactory.createError(error)
+      case ErrorReply(error)                         => typesFactory.createError(error)
       case DataPlaneStateChange(notification)        => typesFactory.createDataPlaneStateChange(notification)
       case ErrorEvent(error)                         => typesFactory.createErrorEvent(error)
       case MessageDeliveryTimeout(timeout)           => typesFactory.createMessageDeliveryTimeout(timeout)
@@ -252,7 +252,7 @@ object NsiSoapConversions {
       "querySummaryConfirmed" -> NsiMessageParser { (body: QuerySummaryConfirmedType) => Success(QuerySummaryConfirmed(body.getReservation().asScala.toVector)) },
       "queryRecursiveConfirmed" -> NsiMessageParser { (body: QueryRecursiveConfirmedType) => Success(QueryRecursiveConfirmed(body.getReservation().asScala.toVector)) },
       "queryNotificationConfirmed" -> NsiMessageParser { (body: QueryNotificationConfirmedType) => Success(QueryNotificationConfirmed(body.getErrorEventOrReserveTimeoutOrDataPlaneStateChange().asScala.toVector)) },
-      "error" -> NsiMessageParser { (body: GenericErrorType) => Success(Error(body)) },
+      "error" -> NsiMessageParser { (body: GenericErrorType) => Success(ErrorReply(body)) },
       "dataPlaneStateChange" -> NsiMessageParser { (body: DataPlaneStateChangeRequestType) => Success(DataPlaneStateChange(body)) },
       "errorEvent" -> NsiMessageParser { (body: ErrorEventType) => Success(ErrorEvent(body)) },
       "messageDeliveryTimeout" -> NsiMessageParser { (body: MessageDeliveryTimeoutRequestType) => Success(MessageDeliveryTimeout(body)) }))

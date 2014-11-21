@@ -18,13 +18,15 @@ case class NsiHeaders(correlationId: CorrelationId, requesterNSA: RequesterNsa, 
   def forAsyncReply: NsiHeaders = copy(replyTo = None, protocolVersion = NsiHeaders.RequesterProtocolVersion, sessionSecurityAttrs = Nil, connectionTrace = Nil)
 }
 
-sealed trait NsiMessage[+T] {
+trait NsiOperation
+
+sealed trait NsiMessage[+T <: NsiOperation] {
   def headers: NsiHeaders
   def body: T
   def correlationId: CorrelationId = headers.correlationId
 }
 
-final case class NsiProviderMessage[+T](headers: NsiHeaders, body: T) extends NsiMessage[T] {
+final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, body: T) extends NsiMessage[T] {
   def ack(acknowledgement: NsiAcknowledgement = GenericAck()): NsiProviderMessage[NsiAcknowledgement] = ack(headers, acknowledgement)
 
   def ackWithCorrectedProviderNsa(providerNsa: String, acknowledgement: NsiAcknowledgement = GenericAck()): NsiProviderMessage[NsiAcknowledgement] =
@@ -36,7 +38,7 @@ final case class NsiProviderMessage[+T](headers: NsiHeaders, body: T) extends Ns
   def reply(reply: NsiRequesterOperation) = NsiRequesterMessage(headers.forAsyncReply, reply)
 }
 
-final case class NsiRequesterMessage[+T](headers: NsiHeaders, body: T) extends NsiMessage[T] {
+final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, body: T) extends NsiMessage[T] {
   def ack(acknowledgement: NsiAcknowledgement = GenericAck()): NsiRequesterMessage[NsiAcknowledgement] = ack(headers, acknowledgement)
 
   def ackWithCorrectedRequesterNsa(requesterNsa: String, acknowledgement: NsiAcknowledgement = GenericAck()): NsiRequesterMessage[NsiAcknowledgement] =

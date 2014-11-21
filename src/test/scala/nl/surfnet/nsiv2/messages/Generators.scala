@@ -93,5 +93,5 @@ object Generators {
   } yield InitialReserve(reserveType, confirmCriteria, service))
 
   implicit val ArbitraryNsiProviderOperation: Arbitrary[NsiProviderOperation] = Arbitrary(arbitrary[InitialReserve])
-  implicit def ArbitraryFromProviderMessage[A: Arbitrary]: Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))
+  implicit def ArbitraryFromProviderMessage[A <: NsiOperation: Arbitrary]: Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))
 }

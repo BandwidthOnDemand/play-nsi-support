@@ -1,11 +1,9 @@
 package nl.surfnet.nsiv2.persistence
 
-import anorm._
 import java.net.URI
 import org.joda.time.Instant
 import play.api.db.DB
 import play.api.test._
-import nl.surfnet.nsiv2.messages._
 import java.util.UUID
 import nl.surfnet.nsiv2.soap.Conversion
 import scala.util.Try

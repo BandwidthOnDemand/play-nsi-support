@@ -7,8 +7,6 @@ import javax.xml.namespace.QName
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.data.validation.ValidationError
-import play.api.libs.functional._
-import play.api.libs.functional.ContravariantFunctorOps
 import play.api.libs.json._
 import scala.util.Try
 

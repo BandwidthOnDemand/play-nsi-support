@@ -2,7 +2,6 @@ package nl.surfnet.nsiv2.soap
 
 import org.specs2._
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import play.api.mvc._
@@ -13,7 +12,6 @@ import play.api.libs.iteratee._
 import javax.xml.soap._
 import java.io.File
 import nl.surfnet.nsiv2.messages._
-import nl.surfnet.nsiv2.soap._
 import java.util.concurrent.TimeUnit
 import NsiSoapConversions.NsiXmlDocumentConversion
 

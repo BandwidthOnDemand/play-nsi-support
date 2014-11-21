@@ -17,7 +17,6 @@ import play.api.Logger
 import play.api.data.validation.ValidationError
 import play.api.db.DB
 import play.api.libs.functional.FunctionalBuilder
-import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
 import nl.surfnet.nsiv2.utils._
@@ -49,7 +48,7 @@ case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: Connecti
 class MessageStore[M](databaseName: String)(implicit app: play.api.Application, conversion: Conversion[M, MessageData]) {
   private implicit def rowToUuid: Column[UUID] = {
     Column.nonNull[UUID] { (value, meta) =>
-      val MetaDataItem(qualified, nullable, clazz) = meta
+      val MetaDataItem(qualified, _, _) = meta
       value match {
         case uuid: UUID => Right(uuid)
         case _          => Left(TypeDoesNotMatch("Cannot convert " + value + ":" + value.asInstanceOf[AnyRef].getClass + " to UUID for column " + qualified))
@@ -61,6 +60,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     SQL("""INSERT INTO connections (connection_id, created_at, requester_nsa) VALUES ({connection_id}, {created_at}, {requester_nsa})""")
       .on('connection_id -> connectionId, 'created_at -> createdAt.toSqlTimestamp, 'requester_nsa -> requesterNsa)
       .executeInsert()
+    ()
   }
 
   def storeInboundWithOutboundMessages(connectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = DB.withTransaction(databaseName) { implicit connection =>
@@ -106,6 +106,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     SQL("""UPDATE connections SET deleted_at = {deleted_at} WHERE connection_id = {connection_id} AND deleted_at IS NULL""")
       .on('connection_id -> connectionId, 'deleted_at -> deletedAt.toSqlTimestamp)
       .executeUpdate().tap(n => Logger.debug(s"Deleted connection $connectionId"))
+    ()
   }
 
   private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("connection_id") ~ get[UUID]("correlation_id") ~ str("type") ~ str("content")).map {

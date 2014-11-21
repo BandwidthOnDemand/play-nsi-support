@@ -19,8 +19,8 @@ object HasXmlAny {
     def setAny(a: A, any: Seq[AnyRef]) = set(a, any)
   }
 
-  implicit val ChildSummaryType: HasXmlAny[ChildSummaryType] = build(_.getAny.asScala, (a, any) => a.getAny.addAll(any.asJava))
-  implicit val QuerySummaryResultCriteriaType: HasXmlAny[QuerySummaryResultCriteriaType] = build(_.getAny.asScala, (a, any) => a.getAny.addAll(any.asJava))
-  implicit val ReservationConfirmCriteriaType: HasXmlAny[ReservationConfirmCriteriaType] = build(_.getAny.asScala, (a, any) => a.getAny.addAll(any.asJava))
-  implicit val ReservationRequestCriteriaType: HasXmlAny[ReservationRequestCriteriaType] = build(_.getAny.asScala, (a, any) => a.getAny.addAll(any.asJava))
+  implicit val ChildSummaryType: HasXmlAny[ChildSummaryType] = build(_.getAny.asScala, { (a, any) => a.getAny.addAll(any.asJava); () })
+  implicit val QuerySummaryResultCriteriaType: HasXmlAny[QuerySummaryResultCriteriaType] = build(_.getAny.asScala, { (a, any) => a.getAny.addAll(any.asJava); () })
+  implicit val ReservationConfirmCriteriaType: HasXmlAny[ReservationConfirmCriteriaType] = build(_.getAny.asScala, { (a, any) => a.getAny.addAll(any.asJava); () })
+  implicit val ReservationRequestCriteriaType: HasXmlAny[ReservationRequestCriteriaType] = build(_.getAny.asScala, { (a, any) => a.getAny.addAll(any.asJava); () })
 }

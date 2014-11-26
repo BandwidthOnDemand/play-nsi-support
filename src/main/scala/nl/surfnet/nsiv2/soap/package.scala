@@ -6,10 +6,6 @@ import org.ogf.schemas.nsi._2013._12.connection.types.{ReservationRequestCriteri
 import scala.util.{Try, Success, Failure}
 
 package object soap {
-  implicit class AnyOps[A](a: A) {
-    def tap[B](f: A => B): A = { f(a); a }
-  }
-
   implicit val ReservationCriteriaConversion = Conversion.build[ReservationConfirmCriteriaType, ReservationRequestCriteriaType] { a =>
     Try(new ReservationRequestCriteriaType().
       withSchedule(a.getSchedule).

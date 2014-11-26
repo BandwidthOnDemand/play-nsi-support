@@ -21,7 +21,7 @@ import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
 import nl.surfnet.nsiv2.utils._
 
-case class MessageData(correlationId: CorrelationId, tpe: String, content: String)
+case class MessageData(correlationId: Option[CorrelationId], tpe: String, content: String)
 object MessageData {
   def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] = Json.fromJson[B](js).flatMap { b =>
@@ -109,9 +109,9 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     ()
   }
 
-  private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("connection_id") ~ get[UUID]("correlation_id") ~ str("type") ~ str("content")).map {
+  private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("connection_id") ~ get[Option[UUID]]("correlation_id") ~ str("type") ~ str("content")).map {
     case id ~ createdAt ~ connectionId ~ correlationId ~ tpe ~ content =>
-      MessageRecord(id, new Instant(createdAt), connectionId, MessageData(CorrelationId.fromUuid(correlationId), tpe, content))
+      MessageRecord(id, new Instant(createdAt), connectionId, MessageData(correlationId.map(CorrelationId.fromUuid), tpe, content))
   }
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(implicit connection: Connection) = {
@@ -121,7 +121,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
              VALUES ({connection_id}, uuid({correlation_id}), {type}, {content}, {created_at}, {inbound_message_id})
         """).on(
       'connection_id -> connectionPk,
-      'correlation_id -> serialized.correlationId.value,
+      'correlation_id -> serialized.correlationId.map(_.value),
       'type -> serialized.tpe,
       'content -> serialized.content,
       'created_at -> createdAt.toSqlTimestamp,

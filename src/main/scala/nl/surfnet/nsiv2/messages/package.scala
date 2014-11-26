@@ -2,13 +2,17 @@ package nl.surfnet.nsiv2
 
 import java.net.URI
 import javax.xml.bind.JAXBElement
-import javax.xml.datatype.{DatatypeFactory,XMLGregorianCalendar}
+import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
 import javax.xml.namespace.QName
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
-import org.joda.time.{DateTime, DateTimeZone}
+import org.joda.time.{ DateTime, DateTimeZone }
 import play.api.data.validation.ValidationError
 import play.api.libs.json._
 import scala.util.Try
+import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
+import java.util.function.Predicate
+import scala.collection.JavaConverters._
+import play.api.libs.functional.syntax._
 
 package object messages {
   type RequesterNsa = String
@@ -25,6 +29,8 @@ package object messages {
     }
     override def writes(t: T): JsValue = JsString(print(t))
   }
+
+  def unaryCaseClassFormat[A: Format, B](fieldName: String)(apply: A => B, unapply: B => Option[A]): OFormat[B] = (__ \ fieldName).format[A].inmap(apply, unlift(unapply))
 
   implicit val JavaTimeInstantFormat: Format[java.time.Instant] = Format(
     implicitly[Reads[Long]].map(java.time.Instant.ofEpochMilli),
@@ -80,7 +86,27 @@ package object messages {
     }
   }
 
-  private [messages] implicit class RichString(str: String) {
+  final val PROTECTION_PARAMETER_TYPE = "protection"
+
+  implicit class P2PServiceBaseTypeOps(service: P2PServiceBaseType) {
+    def protectionType_=(protection: Option[ProtectionType]): Unit = {
+      service.getParameter.removeIf(new Predicate[TypeValueType] {
+        def test(v: TypeValueType) = v.getType == PROTECTION_PARAMETER_TYPE
+      })
+      protection.foreach { protection =>
+        service.getParameter.add(new TypeValueType().withType(PROTECTION_PARAMETER_TYPE).withValue(protection.toString))
+      }
+    }
+
+    def protectionType: Option[ProtectionType] = {
+      service.getParameter.asScala
+        .find { _.getType == PROTECTION_PARAMETER_TYPE }
+        .map(_.getValue)
+        .flatMap(ProtectionType.fromString)
+    }
+  }
+
+  private[messages] implicit class RichString(str: String) {
     def uncapitalize: String = str.take(1).toLowerCase + str.drop(1)
   }
 }

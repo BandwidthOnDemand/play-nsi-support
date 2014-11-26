@@ -13,6 +13,12 @@ package object utils {
     else throw new IllegalArgumentException(f"classpath resource '$name' not found")
   }
 
+  implicit class AnyOps[A](a: A) {
+    def tap[B](f: A => B): A = { f(a); a }
+    def pp: A = { Console.err.println(a); a }
+    def pp(prefix: String): A = { Console.err.println(s"$prefix: $a"); a }
+  }
+
   implicit class OptionOps[A](value: Option[A]) {
     def toTry(ifNone: => Throwable): Try[A] = value.map(Success(_)).getOrElse(Failure(ifNone))
     def toTry(ifNone: String): Try[A] = value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))

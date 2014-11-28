@@ -6,22 +6,26 @@ import play.api.mvc._
 import play.api.mvc.Results._
 import scala.util.Try
 import scalax.io.Resource
+import scala.concurrent.Future
 
 trait SoapWebService {
 
   // FIXME resolve relative paths correctly. The current implementation works for NSI and MTOSI, but that's about it.
 
-  val WsdlPathPrefix: String
+  val WsdlRoot: String
   val WsdlPath: String
   val WsdlBasename: String
 
-  //val WsdlFilenamePattern = "[a-z0-9_-]+(\\.[a-z0-9_-]+)*\\.(wsdl|xsd)"
-
   def serviceUrl: String
 
-  def wsdl(ignore: String) = serveWsdl(WsdlBasename) { _ => replaceSoapAddress }
+  def wsdl = Action.async { implicit request =>
+    if (request.getQueryString("wsdl").isDefined || request.getQueryString("WSDL").isDefined)
+      wsdlOrXsd(WsdlBasename)(request)
+    else
+      Future.successful(Results.NotFound)
+  }
 
-  def wsdlOrXsd(name: String) = serveWsdl(name) { _ => identity }
+  def wsdlOrXsd(name: String) = serveWsdl(name) { _ => replaceSoapAddress }
 
   private def replaceSoapAddress(wsdl: String) = {
     wsdl.replaceAll(
@@ -42,6 +46,6 @@ trait SoapWebService {
 
   private def readClasspathWsdl(name: String): Option[String] = {
     val resolved = Try(URI.create(WsdlPath).resolve(name).toString).toOption
-    resolved.filterNot(_ contains "..").filterNot(_ startsWith "/").flatMap(name => readClasspathResource(s"$WsdlPathPrefix/$name"))
+    resolved.filterNot(_ contains "..").filterNot(_ startsWith "/").flatMap(name => readClasspathResource(s"$WsdlRoot/$name"))
   }
 }

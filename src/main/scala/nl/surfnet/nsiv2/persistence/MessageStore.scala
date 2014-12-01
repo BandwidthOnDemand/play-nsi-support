@@ -4,13 +4,13 @@ package persistence
 import anorm._
 import anorm.SqlParser._
 import java.net.URI
-import java.util.UUID
 import java.sql.Connection
-import nl.surfnet.nsiv2._
-import nl.surfnet.nsiv2.soap._
+import java.time.Instant
+import java.util.UUID
 import nl.surfnet.nsiv2.messages._
-import soap.NsiSoapConversions._
-import org.joda.time.Instant
+import nl.surfnet.nsiv2.soap._
+import nl.surfnet.nsiv2.soap.NsiSoapConversions._
+import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import org.w3c.dom.Document
 import play.api.Logger
@@ -19,7 +19,6 @@ import play.api.db.DB
 import play.api.libs.functional.FunctionalBuilder
 import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
-import nl.surfnet.nsiv2.utils._
 
 case class MessageData(correlationId: Option[CorrelationId], tpe: String, content: String)
 object MessageData {
@@ -111,14 +110,14 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
 
   private def recordParser = (get[Long]("id") ~ get[java.util.Date]("created_at") ~ get[String]("connection_id") ~ get[Option[UUID]]("correlation_id") ~ str("type") ~ str("content")).map {
     case id ~ createdAt ~ connectionId ~ correlationId ~ tpe ~ content =>
-      MessageRecord(id, new Instant(createdAt), connectionId, MessageData(correlationId.map(CorrelationId.fromUuid), tpe, content))
+      MessageRecord(id, createdAt.toInstant(), connectionId, MessageData(correlationId.map(CorrelationId.fromUuid), tpe, content))
   }
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(implicit connection: Connection) = {
     val serialized = conversion(message).get
     SQL("""
         INSERT INTO messages (connection_id, correlation_id, type, content, created_at, inbound_message_id)
-             VALUES ({connection_id}, uuid({correlation_id}), {type}, {content}, {created_at}, {inbound_message_id})
+             VALUES ({connection_id}, CAST({correlation_id} AS UUID), {type}, {content}, {created_at}, {inbound_message_id})
         """).on(
       'connection_id -> connectionPk,
       'correlation_id -> serialized.correlationId.map(_.value),

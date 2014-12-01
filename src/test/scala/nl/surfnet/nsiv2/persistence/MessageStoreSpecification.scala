@@ -1,15 +1,15 @@
 package nl.surfnet.nsiv2.persistence
 
 import java.net.URI
-import org.joda.time.Instant
-import play.api.db.DB
-import play.api.test._
+import java.time.Instant
 import java.util.UUID
 import nl.surfnet.nsiv2.soap.Conversion
-import scala.util.Try
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.specs2.execute.AsResult
+import play.api.db.DB
+import play.api.test._
+import scala.util.Try
 
 abstract class MessageStoreSpecification extends org.specs2.mutable.Specification with org.specs2.ScalaCheck {
   sequential
@@ -23,7 +23,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
   implicit def ArbitraryMessage = Arbitrary(MessageGenerator)
 
   class Fixture extends WithApplication() {
-    lazy val timestamp = new Instant()
+    lazy val timestamp = Instant.now()
     lazy val aggregatedConnectionId = newConnectionId
     lazy val messageStore = {
       val s = new MessageStore[Message]("default")
@@ -41,7 +41,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
       }.set(minTestsOk = 1)
     }
 
-    "fail to store a message for a deleted connection" in new Fixture() { 
+    "fail to store a message for a deleted connection" in new Fixture() {
       propNoShrink { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 

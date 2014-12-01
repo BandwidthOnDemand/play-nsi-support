@@ -47,5 +47,10 @@ package object utils {
 
   implicit class ReadableInstantOps(instant: org.joda.time.ReadableInstant) {
     def toSqlTimestamp = new java.sql.Timestamp(instant.getMillis)
+    def toJavaInstant = java.time.Instant.ofEpochMilli(instant.getMillis)
+  }
+
+  implicit class InstantOps(instant: java.time.Instant) {
+    def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
   }
 }

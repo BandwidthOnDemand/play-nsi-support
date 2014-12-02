@@ -29,6 +29,8 @@ object Generators {
     result <- Try(Gen.const(new DateTime(year, month, day, hour, minute, second))) getOrElse Gen.fail[DateTime]
   } yield result)
 
+  implicit val ArbitraryInstant: Arbitrary[java.time.Instant] = Arbitrary(arbitrary[DateTime].map(dt => java.time.Instant.ofEpochMilli(dt.getMillis)))
+
   implicit val ArbitraryCorrelationId: Arbitrary[CorrelationId] = Arbitrary(for {
     leastSigBits <- arbitrary[Long]
     mostSigBits <- arbitrary[Long]

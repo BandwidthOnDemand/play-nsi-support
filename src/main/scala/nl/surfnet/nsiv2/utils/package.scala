@@ -3,7 +3,11 @@ package nl.surfnet.nsiv2
 import java.net.URI
 import javax.xml.datatype.XMLGregorianCalendar
 import org.joda.time.DateTime
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
+import java.util.GregorianCalendar
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import javax.xml.datatype.DatatypeFactory
 
 package object utils {
   def classpathResourceUri(name: String): URI = {
@@ -50,7 +54,18 @@ package object utils {
     def toJavaInstant = java.time.Instant.ofEpochMilli(instant.getMillis)
   }
 
+  val utc = ZoneId.of("Z")
+
   implicit class InstantOps(instant: java.time.Instant) {
     def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
+
+    def toXMLFormat(zoneId: ZoneId = utc) = toXMLGregorianCalendar(zoneId).toXMLFormat
+
+    def toZonedDateTime(zoneId: ZoneId = utc) = ZonedDateTime.ofInstant(instant, zoneId)
+
+    def toXMLGregorianCalendar(zoneId: ZoneId = utc) = {
+      val cal = GregorianCalendar.from(instant.toZonedDateTime(zoneId))
+      DatatypeFactory.newInstance.newXMLGregorianCalendar(cal)
+    }
   }
 }

@@ -56,15 +56,16 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
   }
 
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = DB.withTransaction(databaseName) { implicit connection =>
-    SQL("""INSERT INTO connections (connection_id, created_at, requester_nsa) VALUES ({connection_id}, {created_at}, {requester_nsa})""")
-      .on('connection_id -> connectionId, 'created_at -> createdAt.toSqlTimestamp, 'requester_nsa -> requesterNsa)
+    SQL"""
+        INSERT INTO connections (connection_id,   created_at,                  requester_nsa)
+             VALUES             (${connectionId}, ${createdAt.toSqlTimestamp}, ${requesterNsa})
+       """
       .executeInsert()
     ()
   }
 
   def storeInboundWithOutboundMessages(connectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = DB.withTransaction(databaseName) { implicit connection =>
-    val connectionPk = SQL("""SELECT id FROM connections WHERE connection_id = {connection_id} AND deleted_at IS NULL""")
-      .on('connection_id -> connectionId)
+    val connectionPk = SQL"""SELECT id FROM connections WHERE connection_id = ${connectionId} AND deleted_at IS NULL"""
       .as(get[Long]("id").singleOpt)
       .getOrElse {
         throw new IllegalArgumentException(s"connection $connectionId does not exist or is already deleted")
@@ -73,23 +74,36 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     outbound.foreach(store(connectionPk, createdAt, _, Some(inboundId)))
   }
 
-  def loadAll(connectionId: ConnectionId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
-    SQL("""
+  def findByConnectionId(connectionId: ConnectionId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
+    SQL"""
         SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
-         WHERE c.connection_id = {connection_id}
-         ORDER BY m.id ASC""").on(
-      'connection_id -> connectionId)
+         WHERE c.connection_id = ${connectionId}
+         ORDER BY m.id ASC
+       """
+      .as(recordParser.*)
+      .map(_.map(message => conversion.invert(message).get)) // FIXME error handling
+  }
+
+  def findByCorrelationId(requesterNsa: String, correlationId: CorrelationId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
+    SQL"""
+        SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
+          FROM messages m INNER JOIN connections c ON m.connection_id = c.id
+         WHERE c.requester_nsa = ${requesterNsa}
+           AND m.correlation_id = CAST(${correlationId.value} AS UUID)
+         ORDER BY m.id ASC
+       """
       .as(recordParser.*)
       .map(_.map(message => conversion.invert(message).get)) // FIXME error handling
   }
 
   def loadEverything(): Seq[(ConnectionId, Seq[MessageRecord[M]])] = DB.withConnection(databaseName) { implicit connection =>
-    SQL("""
+    SQL"""
         SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
          WHERE c.deleted_at IS NULL
-         ORDER BY m.connection_id ASC, m.id ASC""")
+         ORDER BY m.connection_id ASC, m.id ASC
+       """
       .as(recordParser.*)
       .groupBy(_.connectionId)
       .map {
@@ -102,8 +116,11 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
   }
 
   def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = DB.withTransaction(databaseName) { implicit connection =>
-    SQL("""UPDATE connections SET deleted_at = {deleted_at} WHERE connection_id = {connection_id} AND deleted_at IS NULL""")
-      .on('connection_id -> connectionId, 'deleted_at -> deletedAt.toSqlTimestamp)
+    SQL"""
+        UPDATE connections
+           SET deleted_at = ${deletedAt.toSqlTimestamp} 
+         WHERE connection_id = ${connectionId} AND deleted_at IS NULL
+       """
       .executeUpdate().tap(n => Logger.debug(s"Deleted connection $connectionId"))
     ()
   }
@@ -115,15 +132,11 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(implicit connection: Connection) = {
     val serialized = conversion(message).get
-    SQL("""
+    import serialized._
+    SQL"""
         INSERT INTO messages (connection_id, correlation_id, type, content, created_at, inbound_message_id)
-             VALUES ({connection_id}, CAST({correlation_id} AS UUID), {type}, {content}, {created_at}, {inbound_message_id})
-        """).on(
-      'connection_id -> connectionPk,
-      'correlation_id -> serialized.correlationId.map(_.value),
-      'type -> serialized.tpe,
-      'content -> serialized.content,
-      'created_at -> createdAt.toSqlTimestamp,
-      'inbound_message_id -> inboundId).executeInsert().getOrElse(sys.error("insert failed to generate primary key"))
+             VALUES          (${connectionPk}, CAST(${correlationId.map(_.value)} AS UUID), ${tpe}, ${content}, ${createdAt.toSqlTimestamp}, ${inboundId})
+       """
+      .executeInsert().getOrElse(sys.error("insert failed to generate primary key"))
   }
 }

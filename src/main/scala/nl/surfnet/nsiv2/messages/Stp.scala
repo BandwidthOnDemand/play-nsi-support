@@ -11,9 +11,15 @@ case class Stp(identifier: String, label: Option[Stp.Label] = None) {
   override def toString = identifier ++ label.map(label => "?" ++ label.toString).getOrElse("")
 }
 object Stp {
+
   case class Label(labelType: String, labelValue: Option[String]) {
     override def toString = labelType ++ labelValue.map("=" ++ _).getOrElse("")
   }
+  object Label {
+    implicit val LabelOrdering: Ordering[Label] = Ordering.by(label => (label.labelType, label.labelValue))
+  }
+
+  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.label))
 
   private val LabelPattern = "([^=]*)(?:=([^=]*))?".r
 

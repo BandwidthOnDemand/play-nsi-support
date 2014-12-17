@@ -1,6 +1,6 @@
 package nl.surfnet.nsiv2.messages
 
-import org.ogf.schemas.nsi._2013._12.connection.types.{ReservationConfirmCriteriaType, ReserveType}
+import org.ogf.schemas.nsi._2013._12.connection.types.{ ReservationConfirmCriteriaType, ReserveType }
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 
 sealed trait NsiProviderOperation extends NsiOperation {
@@ -19,10 +19,19 @@ sealed trait NsiProviderUpdateCommand extends NsiProviderCommand {
   override def optionalConnectionId: Option[ConnectionId] = Some(connectionId)
 }
 
-case class InitialReserve(body: ReserveType, criteria: ReservationConfirmCriteriaType, service: P2PServiceBaseType) extends NsiProviderCommand {
+sealed trait Reserve extends NsiProviderCommand {
   override def action = "Reserve"
+
+  def body: ReserveType
+  def criteria: ReservationConfirmCriteriaType
+  def service: P2PServiceBaseType
+}
+case class InitialReserve(body: ReserveType, criteria: ReservationConfirmCriteriaType, service: P2PServiceBaseType) extends Reserve {
   override def optionalConnectionId: Option[ConnectionId] = None
 }
+case class ModifyReserve(connectionId: ConnectionId, body: ReserveType, criteria: ReservationConfirmCriteriaType, service: P2PServiceBaseType)
+  extends Reserve with NsiProviderUpdateCommand
+
 case class ReserveCommit(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 case class ReserveAbort(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 

@@ -133,6 +133,7 @@ object NsiSoapConversions {
   implicit val NsiProviderOperationToElement = Conversion.build[NsiProviderOperation, Element] { operation =>
     marshal(operation match {
       case InitialReserve(body, _, _)                      => typesFactory.createReserve(body)
+      case ModifyReserve(_, body, _, _)                    => typesFactory.createReserve(body)
       case ReserveCommit(connectionId)                     => typesFactory.createReserveCommit(new GenericRequestType().withConnectionId(connectionId))
       case ReserveAbort(connectionId)                      => typesFactory.createReserveAbort(new GenericRequestType().withConnectionId(connectionId))
       case Provision(connectionId)                         => typesFactory.createProvision(new GenericRequestType().withConnectionId(connectionId))
@@ -161,12 +162,14 @@ object NsiSoapConversions {
   } {
     messageFactories(Map[String, NsiMessageParser[NsiProviderOperation]](
       "reserve" -> NsiMessageParser { (body: ReserveType) =>
-        if (body.getConnectionId ne null) Failure(ErrorMessage("modify operation is not supported"))
-        else for {
+        for {
           criteria <- Conversion.invert(body.getCriteria())
-          service <- criteria.getPointToPointService().toTry("initial reserve is missing point2point service")
+          service <- criteria.getPointToPointService().toTry("reserve is missing point2point service")
         } yield {
-          InitialReserve(body, criteria, service)
+          if (body.getConnectionId eq null)
+            InitialReserve(body, criteria, service)
+          else
+            ModifyReserve(body.getConnectionId, body, criteria, service)
         }
       },
       "reserveCommit" -> NsiMessageParser { body: GenericRequestType => Success(ReserveCommit(body.getConnectionId())) },

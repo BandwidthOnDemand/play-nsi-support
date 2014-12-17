@@ -59,10 +59,16 @@ class ExtraBodyParsersSpec extends mutable.Specification
 
   "NsiProviderParser" should {
 
-    "give NSI Reserve for a valid reserve request" in {
+    "give NSI Initial Reserve for a valid reserve request" in {
       val result = run(Enumerator.fromFile(new File("src/test/resources/reserve.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
 
       result must beRight.like { case NsiProviderMessage(_, _: InitialReserve) => ok }
+    }
+
+    "give NSI Modify Reserve for a valid reserve request" in {
+      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve_modify.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+
+      result must beRight.like { case NsiProviderMessage(_, _: ModifyReserve) => ok }
     }
 
     "give InternalServerError when NSI Reserve contains extra xml" in {

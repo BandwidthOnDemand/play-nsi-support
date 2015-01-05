@@ -2,6 +2,7 @@ package nl.surfnet.nsiv2.messages
 
 import org.ogf.schemas.nsi._2013._12.connection.types.{ ReservationConfirmCriteriaType, ReserveType }
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
+import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 
 sealed trait NsiProviderOperation extends NsiOperation {
   def action: String = this.getClass().getSimpleName()
@@ -23,14 +24,20 @@ sealed trait Reserve extends NsiProviderCommand {
   override def action = "Reserve"
 
   def body: ReserveType
-  def criteria: ReservationConfirmCriteriaType
-  def service: P2PServiceBaseType
+
+  def criteria: ReservationRequestCriteriaType = body.getCriteria
+  def service: Option[P2PServiceBaseType] = criteria.getPointToPointService()
 }
-case class InitialReserve(body: ReserveType, criteria: ReservationConfirmCriteriaType, service: P2PServiceBaseType) extends Reserve {
+case class InitialReserve(body: ReserveType) extends Reserve {
   override def optionalConnectionId: Option[ConnectionId] = None
+
+  require(body.getConnectionId eq null, "initial reserve must not have connectionId")
 }
-case class ModifyReserve(connectionId: ConnectionId, body: ReserveType, criteria: ReservationConfirmCriteriaType, service: P2PServiceBaseType)
-  extends Reserve with NsiProviderUpdateCommand
+case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpdateCommand {
+  def connectionId = body.getConnectionId
+
+  require(connectionId ne null, "modify must have connectionId")
+}
 
 case class ReserveCommit(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 case class ReserveAbort(connectionId: ConnectionId) extends NsiProviderUpdateCommand

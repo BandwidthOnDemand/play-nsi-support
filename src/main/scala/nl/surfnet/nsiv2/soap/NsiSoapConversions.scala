@@ -132,8 +132,8 @@ object NsiSoapConversions {
 
   implicit val NsiProviderOperationToElement = Conversion.build[NsiProviderOperation, Element] { operation =>
     marshal(operation match {
-      case InitialReserve(body, _, _)                      => typesFactory.createReserve(body)
-      case ModifyReserve(_, body, _, _)                    => typesFactory.createReserve(body)
+      case InitialReserve(body)                            => typesFactory.createReserve(body)
+      case ModifyReserve(body)                             => typesFactory.createReserve(body)
       case ReserveCommit(connectionId)                     => typesFactory.createReserveCommit(new GenericRequestType().withConnectionId(connectionId))
       case ReserveAbort(connectionId)                      => typesFactory.createReserveAbort(new GenericRequestType().withConnectionId(connectionId))
       case Provision(connectionId)                         => typesFactory.createProvision(new GenericRequestType().withConnectionId(connectionId))
@@ -167,9 +167,9 @@ object NsiSoapConversions {
           service <- criteria.getPointToPointService().toTry("reserve is missing point2point service")
         } yield {
           if (body.getConnectionId eq null)
-            InitialReserve(body, criteria, service)
+            InitialReserve(body)
           else
-            ModifyReserve(body.getConnectionId, body, criteria, service)
+            ModifyReserve(body)
         }
       },
       "reserveCommit" -> NsiMessageParser { body: GenericRequestType => Success(ReserveCommit(body.getConnectionId())) },

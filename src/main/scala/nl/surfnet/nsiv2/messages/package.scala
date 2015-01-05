@@ -1,18 +1,24 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
+import java.util.function.Predicate
 import javax.xml.bind.JAXBElement
 import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
 import javax.xml.namespace.QName
-import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
+import nl.surfnet.nsiv2.utils._
 import org.joda.time.{ DateTime, DateTimeZone }
-import play.api.data.validation.ValidationError
-import play.api.libs.json._
-import scala.util.Try
+import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
+import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
+import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
+import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
-import java.util.function.Predicate
-import scala.collection.JavaConverters._
+import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import scala.collection.JavaConverters._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 package object messages {
   type RequesterNsa = String
@@ -75,13 +81,19 @@ package object messages {
     def withPointToPointService(service: P2PServiceBaseType): A = {
       val element = PointToPointObjectFactory.createP2Ps(service)
 
-      // FIXME replace if already exists?
-      HasXmlAny[A].setAny(a, Seq(element))
+      val any = HasXmlAny[A].getAny(a)
+      any.removeIf(new Predicate[AnyRef] {
+        def test(v: AnyRef) = v match {
+          case JaxbElement(P2PS_QNAME, _: P2PServiceBaseType) => true
+          case _ => false
+        }
+      })
+      any.add(element)
 
       a
     }
 
-    def getPointToPointService(): Option[P2PServiceBaseType] = HasXmlAny[A].getAny(a).collectFirst {
+    def getPointToPointService(): Option[P2PServiceBaseType] = HasXmlAny[A].getAny(a).asScala.collectFirst {
       case JaxbElement(P2PS_QNAME, p2ps: P2PServiceBaseType) => p2ps
     }
   }
@@ -103,6 +115,33 @@ package object messages {
         .find { _.getType == PROTECTION_PARAMETER_TYPE }
         .map(_.getValue)
         .flatMap(ProtectionType.fromString)
+    }
+  }
+
+  implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {
+    def toConfirmCriteria(fullySpecifiedSource: String, fullySpecifiedDest: String, defaultVersion: => Int): Try[ReservationConfirmCriteriaType] = for {
+      requestP2P <- requestCriteria.getPointToPointService().toTry(s"point2point service is missing from request criteria")
+    } yield {
+      val confirmP2P = new P2PServiceBaseType()
+        .withAny(requestP2P.getAny)
+        .withCapacity(requestP2P.getCapacity)
+        .withDestSTP(fullySpecifiedDest)
+        .withDirectionality(requestP2P.getDirectionality)
+        .withEro(requestP2P.getEro)
+        .withParameter(requestP2P.getParameter)
+        .withSourceSTP(fullySpecifiedSource)
+        .withSymmetricPath(requestP2P.isSymmetricPath())
+
+      val schedule = Option(requestCriteria.getSchedule).getOrElse(new ScheduleType())
+
+      val confirmCriteria = new ReservationConfirmCriteriaType()
+        .withAny(requestCriteria.getAny)
+        .withServiceType(requestCriteria.getServiceType)
+        .withSchedule(schedule)
+        .withVersion(if (requestCriteria.getVersion eq null) defaultVersion else requestCriteria.getVersion)
+      confirmCriteria.withPointToPointService(confirmP2P)
+      confirmCriteria.getOtherAttributes.putAll(requestCriteria.getOtherAttributes)
+      confirmCriteria
     }
   }
 

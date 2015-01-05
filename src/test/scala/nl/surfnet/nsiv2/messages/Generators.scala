@@ -88,11 +88,7 @@ object Generators {
     securityAttributes <- Gen.resize(3, Gen.listOf(arbitrary[SessionSecurityAttrType]))
   } yield NsiHeaders(correlationId, requesterNsa, providerNsa, replyTo, protocolVersion, securityAttributes))
 
-  implicit val ArbitraryInitialReserve: Arbitrary[InitialReserve] = Arbitrary(for {
-    reserveType <- arbitrary[ReserveType]
-    confirmCriteria <- Conversion.invert(reserveType.getCriteria) map Gen.const getOrElse Gen.fail
-    service <- reserveType.getCriteria.getPointToPointService map Gen.const getOrElse Gen.fail
-  } yield InitialReserve(reserveType, confirmCriteria, service))
+  implicit val ArbitraryInitialReserve: Arbitrary[InitialReserve] = Arbitrary(Gen.resultOf(InitialReserve.apply _))
 
   implicit val ArbitraryNsiProviderOperation: Arbitrary[NsiProviderOperation] = Arbitrary(arbitrary[InitialReserve])
   implicit def ArbitraryFromProviderMessage[A <: NsiOperation: Arbitrary]: Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))

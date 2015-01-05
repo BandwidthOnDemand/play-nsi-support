@@ -1,11 +1,12 @@
 package nl.surfnet.nsiv2
 
-import utils._
+import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import org.ogf.schemas.nsi._2013._12.connection.types.{ReservationRequestCriteriaType, ReservationConfirmCriteriaType}
-
 import scala.util.{Try, Success, Failure}
+import utils._
 
 package object soap {
+  // FIXME
   implicit val ReservationCriteriaConversion = Conversion.build[ReservationConfirmCriteriaType, ReservationRequestCriteriaType] { a =>
     Try(new ReservationRequestCriteriaType().
       withSchedule(a.getSchedule).
@@ -15,9 +16,9 @@ package object soap {
       tap(_.getOtherAttributes.putAll(a.getOtherAttributes)))
   } { b =>
     for {
-      schedule <- Option(b.getSchedule).map(Success(_)).getOrElse(Failure(ErrorMessage("schedule is required")))
       serviceType <- Option(b.getServiceType).map(Success(_)).getOrElse(Failure(ErrorMessage("serviceType is required")))
     } yield {
+      val schedule = Option(b.getSchedule).getOrElse(new ScheduleType())
       new ReservationConfirmCriteriaType().
         withSchedule(schedule).
         withAny(b.getAny).

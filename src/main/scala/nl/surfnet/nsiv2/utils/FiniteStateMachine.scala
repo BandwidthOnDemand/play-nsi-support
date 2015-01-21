@@ -29,6 +29,8 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
     }
   }
 
+  override def toString = s"${super.toString}(stateName = $stateName, stateData = $stateData)"
+
   /**
    * This captures all of the managed state of the state machine: the state
    * name, the state data, and replies accumulated while processing the last

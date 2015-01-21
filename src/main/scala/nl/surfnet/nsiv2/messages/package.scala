@@ -145,6 +145,26 @@ package object messages {
     }
   }
 
+  implicit class ShallowCopyOps[A: ShallowCopyable](a: A) {
+    def shallowCopy: A = ShallowCopyable[A].shallowCopy(a)
+  }
+
+  implicit val P2PServiceBaseTypeShallowCopyable = ShallowCopyable.build { a: P2PServiceBaseType =>
+    new P2PServiceBaseType()
+      .withAny(a.getAny)
+      .withCapacity(a.getCapacity)
+      .withDestSTP(a.getDestSTP)
+      .withDirectionality(a.getDirectionality)
+      .withEro(a.getEro)
+      .withParameter(a.getParameter)
+      .withSourceSTP(a.getSourceSTP)
+      .withSymmetricPath(a.isSymmetricPath)
+  }
+
+  implicit val ScheduleTypeShallowCopyable = ShallowCopyable.build { a: ScheduleType =>
+    new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
+  }
+
   private[messages] implicit class RichString(str: String) {
     def uncapitalize: String = str.take(1).toLowerCase + str.drop(1)
   }

@@ -116,6 +116,14 @@ package object messages {
         .map(_.getValue)
         .flatMap(ProtectionType.fromString)
     }
+
+    def sourceStp: Stp = Stp.fromString(service.getSourceSTP).getOrElse {
+      throw new IllegalArgumentException(s"invalid source STP ${service.getSourceSTP}")
+    }
+
+    def destStp: Stp = Stp.fromString(service.getDestSTP).getOrElse {
+      throw new IllegalArgumentException(s"invalid destination STP ${service.getDestSTP}")
+    }
   }
 
   implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {

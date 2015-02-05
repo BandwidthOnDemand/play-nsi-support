@@ -7,6 +7,7 @@ import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
 import javax.xml.namespace.QName
 import nl.surfnet.nsiv2.utils._
 import org.joda.time.{ DateTime, DateTimeZone }
+import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
@@ -78,7 +79,7 @@ package object messages {
     def unapply[A](element: JAXBElement[A]): Option[(QName, A)] = Some((element.getName(), element.getValue()))
   }
   implicit class XmlPointToPointServiceOps[A: HasXmlAny](a: A) {
-    def withPointToPointService(service: P2PServiceBaseType): A = {
+    def setPointToPointService(service: P2PServiceBaseType): Unit = {
       val element = PointToPointObjectFactory.createP2Ps(service)
 
       val any = HasXmlAny[A].getAny(a)
@@ -89,7 +90,11 @@ package object messages {
         }
       })
       any.add(element)
+      ()
+    }
 
+    def withPointToPointService(service: P2PServiceBaseType): A = {
+      setPointToPointService(service)
       a
     }
 
@@ -127,30 +132,56 @@ package object messages {
   }
 
   implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {
-    def toConfirmCriteria(fullySpecifiedSource: String, fullySpecifiedDest: String, defaultVersion: => Int): Try[ReservationConfirmCriteriaType] = for {
+    def toModifiedConfirmCriteria(previouslyCommittedCriteria: ReservationConfirmCriteriaType): Try[ReservationConfirmCriteriaType] = for {
       requestP2P <- requestCriteria.getPointToPointService().toTry(s"point2point service is missing from request criteria")
     } yield {
       val confirmP2P = new P2PServiceBaseType()
         .withAny(requestP2P.getAny)
         .withCapacity(requestP2P.getCapacity)
-        .withDestSTP(fullySpecifiedDest)
+        .withDestSTP(previouslyCommittedCriteria.getPointToPointService().get.getDestSTP)
         .withDirectionality(requestP2P.getDirectionality)
         .withEro(requestP2P.getEro)
         .withParameter(requestP2P.getParameter)
-        .withSourceSTP(fullySpecifiedSource)
+        .withSourceSTP(previouslyCommittedCriteria.getPointToPointService().get.getSourceSTP)
         .withSymmetricPath(requestP2P.isSymmetricPath())
 
-      val schedule = Option(requestCriteria.getSchedule).getOrElse(new ScheduleType())
+      val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
+      if (schedule.getStartTime eq null) schedule.setStartTime(previouslyCommittedCriteria.getSchedule.getStartTime)
 
       val confirmCriteria = new ReservationConfirmCriteriaType()
         .withAny(requestCriteria.getAny)
-        .withServiceType(requestCriteria.getServiceType)
+        .withServiceType(Option(requestCriteria.getServiceType) getOrElse previouslyCommittedCriteria.getServiceType)
         .withSchedule(schedule)
-        .withVersion(if (requestCriteria.getVersion eq null) defaultVersion else requestCriteria.getVersion)
+        .withVersion(if (requestCriteria.getVersion eq null) previouslyCommittedCriteria.getVersion + 1 else requestCriteria.getVersion)
       confirmCriteria.withPointToPointService(confirmP2P)
       confirmCriteria.getOtherAttributes.putAll(requestCriteria.getOtherAttributes)
       confirmCriteria
     }
+
+    def toInitialConfirmCriteria(fullySpecifiedSource: String, fullySpecifiedDest: String): Try[ReservationConfirmCriteriaType] =
+      toModifiedConfirmCriteria(new ReservationConfirmCriteriaType()
+        .withSchedule(new ScheduleType())
+        .withPointToPointService(new P2PServiceBaseType()
+          .withSourceSTP(fullySpecifiedSource)
+          .withDestSTP(fullySpecifiedDest))
+        .withVersion(0))
+
+    /** Schedule is optional. */
+    def schedule: Option[ScheduleType] = Option(requestCriteria.getSchedule)
+
+    def version: Option[Int] = if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
+  }
+
+  implicit class ReservationConfirmCriteriaTypeOps(criteria: ReservationConfirmCriteriaType) {
+    /** Schedule is required. */
+    def schedule: ScheduleType = criteria.getSchedule
+
+    def version: Int = criteria.getVersion
+  }
+
+  implicit class QuerySummaryResultCriteriaTypeOps(criteria: QuerySummaryResultCriteriaType) {
+    /** Schedule is required. */
+    def schedule: ScheduleType = criteria.getSchedule
   }
 
   implicit class ShallowCopyOps[A: ShallowCopyable](a: A) {

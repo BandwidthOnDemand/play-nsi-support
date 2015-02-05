@@ -48,6 +48,8 @@ object Generators {
       .withEndTime(endTime.map(_.toXmlGregorianCalendar).orNull)
   })
 
+  implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s => Stp.fromString(s) map Gen.const getOrElse Gen.fail })
+
   implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(for {
     capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)
     directionality <- Gen.oneOf(DirectionalityType.values())
@@ -69,7 +71,12 @@ object Generators {
     schedule <- arbitrary[ScheduleType]
     serviceType <- Gen.oneOf("service-type-1", "service-type-2")
     service <- arbitrary[P2PServiceBaseType]
-  } yield new ReservationRequestCriteriaType().withSchedule(schedule).withServiceType(serviceType).withPointToPointService(service))
+    version <- arbitrary[Option[Int]]
+  } yield new ReservationRequestCriteriaType()
+    .withSchedule(schedule)
+    .withServiceType(serviceType)
+    .withPointToPointService(service)
+    .withVersion(version.map(Integer.valueOf).orNull))
 
   implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] = Arbitrary(arbitrary[ReservationRequestCriteriaType].flatMap { criteria =>
     Conversion[ReservationConfirmCriteriaType, ReservationRequestCriteriaType].invert(criteria) map Gen.const getOrElse Gen.fail

@@ -12,7 +12,7 @@ class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specifica
         service.getSourceSTP must_== source.toString
         service.getDestSTP must_== dest.toString
       }
-      
+
       "use specified schedule" in prop { (request: ReservationRequestCriteriaType) =>
         val schedule = request.toInitialConfirmCriteria("A", "B").get.getSchedule
         schedule must not(beNull)
@@ -63,15 +63,7 @@ class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specifica
       }
 
       "serviceType" >> {
-        "keep specified value" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-          (request.getServiceType ne null) ==> {
-            request.toModifiedConfirmCriteria(confirm).get.getServiceType must_== request.getServiceType
-          }
-        }
-
-        "default missing value to confirm criteria" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-          request.setServiceType(null)
-
+        "keep committed value" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
           request.toModifiedConfirmCriteria(confirm).get.getServiceType must_== confirm.getServiceType
         }
       }

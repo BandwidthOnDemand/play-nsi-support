@@ -133,37 +133,30 @@ package object messages {
 
   implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {
     def toModifiedConfirmCriteria(previouslyCommittedCriteria: ReservationConfirmCriteriaType): Try[ReservationConfirmCriteriaType] = for {
+      committedP2P <- previouslyCommittedCriteria.getPointToPointService().toTry(s"point2point service is missing from committed criteria")
       requestP2P <- requestCriteria.getPointToPointService().toTry(s"point2point service is missing from request criteria")
     } yield {
-      val confirmP2P = new P2PServiceBaseType()
-        .withAny(requestP2P.getAny)
-        .withCapacity(requestP2P.getCapacity)
-        .withDestSTP(previouslyCommittedCriteria.getPointToPointService().get.getDestSTP)
-        .withDirectionality(requestP2P.getDirectionality)
-        .withEro(requestP2P.getEro)
-        .withParameter(requestP2P.getParameter)
-        .withSourceSTP(previouslyCommittedCriteria.getPointToPointService().get.getSourceSTP)
-        .withSymmetricPath(requestP2P.isSymmetricPath())
+      val confirmP2P = committedP2P.shallowCopy.withCapacity(requestP2P.getCapacity)
 
       val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
       if (schedule.getStartTime eq null) schedule.setStartTime(previouslyCommittedCriteria.getSchedule.getStartTime)
 
       val confirmCriteria = new ReservationConfirmCriteriaType()
-        .withAny(requestCriteria.getAny)
-        .withServiceType(Option(requestCriteria.getServiceType) getOrElse previouslyCommittedCriteria.getServiceType)
+        .withAny(previouslyCommittedCriteria.getAny)
+        .withServiceType(previouslyCommittedCriteria.getServiceType)
         .withSchedule(schedule)
         .withVersion(if (requestCriteria.getVersion eq null) previouslyCommittedCriteria.getVersion + 1 else requestCriteria.getVersion)
       confirmCriteria.withPointToPointService(confirmP2P)
-      confirmCriteria.getOtherAttributes.putAll(requestCriteria.getOtherAttributes)
+      confirmCriteria.getOtherAttributes.putAll(previouslyCommittedCriteria.getOtherAttributes)
       confirmCriteria
     }
 
     def toInitialConfirmCriteria(fullySpecifiedSource: String, fullySpecifiedDest: String): Try[ReservationConfirmCriteriaType] =
       toModifiedConfirmCriteria(new ReservationConfirmCriteriaType()
+        .withAny(requestCriteria.getAny)
         .withSchedule(new ScheduleType())
-        .withPointToPointService(new P2PServiceBaseType()
-          .withSourceSTP(fullySpecifiedSource)
-          .withDestSTP(fullySpecifiedDest))
+        .withServiceType(requestCriteria.getServiceType)
+        .withPointToPointService(requestCriteria.getPointToPointService().get.shallowCopy.withSourceSTP(fullySpecifiedSource).withDestSTP(fullySpecifiedDest))
         .withVersion(0))
 
     /** Schedule is optional. */

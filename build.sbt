@@ -8,7 +8,7 @@ scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywar
 
 publishArtifact in Test := true
 
-val playVersion = "2.3.6"
+val playVersion = "2.3.9"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "0.3.6",

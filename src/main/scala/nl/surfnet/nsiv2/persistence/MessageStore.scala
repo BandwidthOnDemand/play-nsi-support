@@ -67,16 +67,6 @@ case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: Connecti
 }
 
 class MessageStore[M](databaseName: String)(implicit app: play.api.Application, conversion: Conversion[M, MessageData]) {
-  private implicit def rowToUuid: Column[UUID] = {
-    Column.nonNull[UUID] { (value, meta) =>
-      val MetaDataItem(qualified, _, _) = meta
-      value match {
-        case uuid: UUID => Right(uuid)
-        case _          => Left(TypeDoesNotMatch("Cannot convert " + value + ":" + value.asInstanceOf[AnyRef].getClass + " to UUID for column " + qualified))
-      }
-    }
-  }
-
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = DB.withTransaction(databaseName) { implicit connection =>
     SQL"""
         INSERT INTO connections (connection_id,   created_at,                  requester_nsa)
@@ -140,7 +130,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
   def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = DB.withTransaction(databaseName) { implicit connection =>
     SQL"""
         UPDATE connections
-           SET deleted_at = ${deletedAt.toSqlTimestamp} 
+           SET deleted_at = ${deletedAt.toSqlTimestamp}
          WHERE connection_id = ${connectionId} AND deleted_at IS NULL
        """
       .executeUpdate().tap(n => Logger.debug(s"Deleted connection $connectionId"))

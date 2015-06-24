@@ -2,7 +2,7 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.7"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args")
 

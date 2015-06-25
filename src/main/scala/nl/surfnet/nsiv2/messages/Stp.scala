@@ -33,6 +33,9 @@ import scala.util.Try
 final class VlanRange(private val range: ImmutableRangeSet[Integer]) {
   def subsetOf(that: VlanRange): Boolean = that.range enclosesAll this.range
 
+  def lowerBound: Int = range.span().lowerEndpoint()
+  def upperBound: Int = range.span().upperEndpoint()
+
   override def equals(o: Any) = o match {
     case that: VlanRange => this.range == that.range
     case _ => false

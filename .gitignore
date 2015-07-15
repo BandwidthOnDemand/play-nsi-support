@@ -3,3 +3,6 @@
 /target
 /.idea
 /.cache
+/.cache-main
+/.cache-tests
+/logs/

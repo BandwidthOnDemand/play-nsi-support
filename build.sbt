@@ -17,6 +17,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-jdbc" % playVersion,
   "com.typesafe.play" %% "anorm" % playVersion,
   "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
+  "com.google.code.findbugs" % "jsr305" % "3.0.0", // for javax.annotation.Nullable
   "com.typesafe.play" %% "play-test" % playVersion % "test",
   "org.specs2" %% "specs2-scalacheck" % "2.3.13" % "test",
   "org.specs2" %% "specs2-junit" % "2.3.13" % "test"
@@ -26,8 +27,11 @@ val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
 val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
 val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
 val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
+val scalazReleases = "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
-resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
+resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases, scalazReleases )
+
+scalacOptions in Test ++= Seq("-Yrangepos")
 
 publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
 

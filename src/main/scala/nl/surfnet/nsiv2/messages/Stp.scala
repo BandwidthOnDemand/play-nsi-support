@@ -23,15 +23,25 @@
 package nl.surfnet.nsiv2
 package messages
 
-import java.util.regex.Pattern
 import com.google.common.collect.ImmutableRangeSet
 import com.google.common.collect.Range
 import com.google.common.collect.TreeRangeSet
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.util.regex.Pattern
 import scala.collection.JavaConverters._
+import scala.collection.immutable.SortedMap
 import scala.util.Try
+import play.utils.UriEncoding
 
 final class VlanRange(private val range: ImmutableRangeSet[Integer]) {
-  def subsetOf(that: VlanRange): Boolean = that.range enclosesAll this.range
+  require(!range.isEmpty, "VLAN range cannot be empty")
+
+  def isSingleton: Boolean = {
+    val span = range.span
+    span.upperEndpoint() == span.lowerEndpoint()
+  }
+  def isSubsetOf(that: VlanRange): Boolean = that.range enclosesAll this.range
 
   def lowerBound: Int = range.span().lowerEndpoint()
   def upperBound: Int = range.span().upperEndpoint()
@@ -70,46 +80,64 @@ object VlanRange {
   }.toOption
 }
 
-case class Stp(identifier: String, label: Option[Stp.Label] = None) {
-  def withoutLabel = copy(label = None)
-  def withLabel(labelType: String, labelValue: String) = copy(label = Some(Stp.Label(labelType, Some(labelValue))))
+case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = SortedMap.empty) {
+  require(identifier.nonEmpty, "identifier must be non-empty")
+  require(labels.forall(_._1.nonEmpty), "label types must be non-empty")
 
-  def vlan: Option[VlanRange] = label.filter(_.labelType == "vlan").flatMap(_.labelValue).flatMap(VlanRange.fromString)
+  def withoutLabels = copy(labels = SortedMap.empty)
+  def withLabel(labelType: String, labelValue: String) = copy(labels = labels + (labelType -> Some(labelValue)))
 
-  def isCompatibleWith(that: Stp) = (this.identifier == that.identifier) && ((this.vlan, that.vlan) match {
-    case (None, _) => true
-    case (Some(vlan), None) => false
-    case (Some(thisVlan), Some(thatVlan)) => thisVlan subsetOf thatVlan
-  })
+  def vlan: Option[VlanRange] = labels.getOrElse("vlan", None).flatMap(VlanRange.fromString)
 
-  override def toString = identifier ++ label.map(label => "?" ++ label.toString).getOrElse("")
+  def serverVlan: Option[VlanRange] = labels.getOrElse("s-vlan", None).flatMap(VlanRange.fromString)
+
+  def isClientVlanCompatibleWith(target: Stp): Boolean = (this.vlan, target.vlan) match {
+    case (None, _)                        => true
+    case (Some(specified), Some(allowed)) => specified isSubsetOf allowed
+    case _                                => false
+  }
+
+  def isServerVlanCompatibleWith(target: Stp): Boolean = (this.serverVlan, target.serverVlan) match {
+    case (None, None)                     => true
+    case (Some(specified), Some(allowed)) => specified isSubsetOf allowed
+    case _                                => false
+  }
+
+  def isCompatibleWith(that: Stp) = this.identifier == that.identifier && this.isClientVlanCompatibleWith(that) && this.isServerVlanCompatibleWith(that)
+
+  override def toString = UriEncoding.encodePathSegment(identifier, "UTF-8") ++ queryString
+
+  private def queryString = if (labels.isEmpty) "" else labels.iterator.map {
+    case (label, None)        => URLEncoder.encode(label, "UTF-8")
+    case (label, Some(value)) => s"${URLEncoder.encode(label, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+  }.mkString("?", "&", "")
 }
+
 object Stp {
+  type Label = (String, Option[String])
 
-  case class Label(labelType: String, labelValue: Option[String]) {
-    override def toString = labelType ++ labelValue.map("=" ++ _).getOrElse("")
-  }
-  object Label {
-    implicit val LabelOrdering: Ordering[Label] = Ordering.by(label => (label.labelType, label.labelValue))
-  }
-
-  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.label))
+  import scala.math.Ordering.Implicits._
+  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.labels.toStream))
 
   private val LabelPattern = "([^=]*)(?:=([^=]*))?".r
 
   def fromString(s: String): Option[Stp] = {
     def parseLabel(label: String): Option[Label] = label match {
-      case LabelPattern(labelType, labelValue) =>
-        Some(Label(labelType, Option(labelValue)))
+      case LabelPattern(labelType, labelValue) if labelType.nonEmpty =>
+        Some((URLDecoder.decode(labelType, "UTF-8"), Option(labelValue).map(URLDecoder.decode(_, "UTF-8"))))
       case _ =>
         None
     }
 
     s.split(Pattern.quote("?")) match {
-      case Array(identifier) =>
-        Some(new Stp(identifier))
-      case Array(identifier, label) =>
-        parseLabel(label).map(label => new Stp(identifier, Some(label)))
+      case Array(identifier) if identifier.nonEmpty =>
+        Some(Stp(UriEncoding.decodePath(identifier, "UTF-8")))
+      case Array(identifier, queryString) if identifier.nonEmpty =>
+        val parsedLabels = queryString.split(Pattern.quote("&")).map(parseLabel)
+        val labels = if (parsedLabels contains None) None else Some(parsedLabels.map(_.get))
+        labels.map { l => 
+          Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l: _*))
+        }
       case _ =>
         None
     }

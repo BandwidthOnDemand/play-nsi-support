@@ -3,15 +3,16 @@ package nl.surfnet.nsiv2.persistence
 import java.net.URI
 import java.time.Instant
 import java.util.UUID
-import nl.surfnet.nsiv2.soap.Conversion
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
+import org.scalacheck.Prop
+import org.scalacheck.Shrink
 import org.specs2.execute.AsResult
 import play.api.db.DB
 import play.api.test._
 import scala.util.Try
-import org.scalacheck.Prop
 import nl.surfnet.nsiv2.messages.CorrelationId
+import nl.surfnet.nsiv2.soap.Conversion
 
 abstract class MessageStoreSpecification extends org.specs2.mutable.Specification with org.specs2.ScalaCheck {
   sequential
@@ -28,6 +29,8 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
     data <- MessageConversion(message).map(Gen.const).getOrElse(Gen.fail)
   } yield (message, data))
 
+  implicit def shrinkMessage: Shrink[Message] = Shrink(x => Stream.empty)
+
   class Fixture extends WithApplication() {
     lazy val requesterNsa = "requester_msa"
     lazy val timestamp = Instant.now()
@@ -41,7 +44,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
 
   "MessageStore" should {
     "fail to store message for unknown connection" in new Fixture() {
-      propNoShrink { (message: Message) =>
+      prop { (message: Message) =>
         val unknownConnectionId = newConnectionId
 
         messageStore.storeInboundWithOutboundMessages(unknownConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
@@ -49,7 +52,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
     }
 
     "fail to store a message for a deleted connection" in new Fixture() {
-      propNoShrink { (message: Message) =>
+      prop { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 
         messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
@@ -57,7 +60,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
     }
 
     "append new messages at the end" in new Fixture {
-      propNoShrink { (message: Message) =>
+      prop { (message: Message) =>
         messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must not(throwA[Exception])
 
         val loaded = messageStore.findByConnectionId(aggregatedConnectionId)
@@ -67,7 +70,7 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
     }
 
     "retrieve based on correlation id" in new Fixture {
-      propNoShrink { (message: Message) =>
+      prop { (message: Message) =>
         withCorrelationId(message) { correlationId =>
           messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must not(throwA[Exception])
 

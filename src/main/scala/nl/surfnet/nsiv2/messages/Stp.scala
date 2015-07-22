@@ -24,7 +24,7 @@ package nl.surfnet.nsiv2
 package messages
 
 import com.google.common.collect.ImmutableRangeSet
-import com.google.common.collect.Range
+import com.google.common.collect.{ Range => GRange }
 import com.google.common.collect.TreeRangeSet
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -33,30 +33,50 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.SortedMap
 import scala.util.Try
 import play.utils.UriEncoding
+import com.google.common.collect.DiscreteDomain
+import com.google.common.collect.BoundType
 
-final class VlanRange(private val range: ImmutableRangeSet[Integer]) {
-  require(!range.isEmpty, "VLAN range cannot be empty")
+final class VlanRange(private val ranges: ImmutableRangeSet[Integer]) {
+  require(!ranges.isEmpty, "VLAN ranges cannot be empty")
+  require(ranges.asRanges().asScala.forall { r =>
+    (r.hasLowerBound() && r.lowerBoundType() == BoundType.CLOSED
+        && r.hasUpperBound() && r.upperBoundType() == BoundType.CLOSED)
+  }, "all ranges must be closed")
 
-  def isSingleton: Boolean = {
-    val span = range.span
-    span.upperEndpoint() == span.lowerEndpoint()
+  private def span = ranges.span
+
+  def isSingleton: Boolean = lowerBound == upperBound
+
+  def isSubsetOf(that: VlanRange): Boolean = that.ranges enclosesAll this.ranges
+
+  def lowerBound: Int = span.lowerEndpoint()
+  def upperBound: Int = span.upperEndpoint()
+
+  def intersect(that: VlanRange): Option[VlanRange] = {
+    val intersection = TreeRangeSet.create[Integer]
+    this.ranges.asSet(DiscreteDomain.integers()).asScala.foreach { (vlan: Integer) =>
+      if (that.ranges.contains(vlan)) {
+        intersection.add(GRange.closedOpen(vlan, vlan + 1))
+      }
+    }
+    val closedRanges = TreeRangeSet.create[Integer]
+    intersection.asRanges().asScala.foreach { range =>
+      closedRanges.add(GRange.closed(range.lowerEndpoint, range.upperEndpoint - 1))
+    }
+    if (closedRanges.isEmpty) None else Some(new VlanRange(ImmutableRangeSet.copyOf(closedRanges)))
   }
-  def isSubsetOf(that: VlanRange): Boolean = that.range enclosesAll this.range
-
-  def lowerBound: Int = range.span().lowerEndpoint()
-  def upperBound: Int = range.span().upperEndpoint()
 
   override def equals(o: Any) = o match {
-    case that: VlanRange => this.range == that.range
-    case _ => false
+    case that: VlanRange => this.ranges == that.ranges
+    case _               => false
   }
 
-  override def hashCode = range.hashCode
+  override def hashCode = ranges.hashCode
 
-  override def toString = range.asRanges().asScala.map { range =>
+  override def toString = ranges.asRanges().asScala.map { range =>
     (range.lowerEndpoint(), range.upperEndpoint()) match {
       case (lower, upper) if lower == upper => f"$lower%d"
-      case (lower, upper) => f"$lower%d-$upper%d"
+      case (lower, upper)                   => f"$lower%d-$upper%d"
     }
   }.mkString(",")
 }
@@ -65,16 +85,25 @@ object VlanRange {
   private final val RANGE_PATTERN = "(\\d+)-(\\d+)".r
   private final val SINGLETON_PATTERN = "(\\d+)".r
 
-  def apply(ranges: Seq[Range[Integer]]): VlanRange = {
+  private[messages] def apply(ranges: Seq[GRange[Integer]]): VlanRange = {
     val set = TreeRangeSet.create[Integer]
     ranges.foreach(set.add)
     new VlanRange(ImmutableRangeSet.copyOf(set))
   }
 
+  val all: VlanRange = apply(Seq(GRange.closed(1, 4094)))
+
+  def singleton(v: Int): VlanRange = apply(Seq(GRange.singleton(v)))
+
+  def range(range: Range): Option[VlanRange] = {
+    val end = if (range.isInclusive) range.end else range.end - 1
+    if (range.start <= end && range.step == 1) Some(VlanRange(Seq(GRange.closed(range.start, end)))) else None
+  }
+
   def fromString(s: String): Option[VlanRange] = if (!ALLOWED_SYNTAX.matcher(s).matches()) None else Try {
     val ranges = s.replaceAll("\\s+", "").split(",").map {
-      case RANGE_PATTERN(lower, upper) => Range.closed(Integer.valueOf(lower), Integer.valueOf(upper))
-      case SINGLETON_PATTERN(value) => Range.singleton(Integer.valueOf(value))
+      case RANGE_PATTERN(lower, upper) => GRange.closed(Integer.valueOf(lower), Integer.valueOf(upper))
+      case SINGLETON_PATTERN(value)    => GRange.singleton(Integer.valueOf(value))
     }
     VlanRange(ranges)
   }.toOption
@@ -85,6 +114,9 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
   require(labels.forall(_._1.nonEmpty), "label types must be non-empty")
 
   def withoutLabels = copy(labels = SortedMap.empty)
+
+  def withoutLabel(labelType: String) = copy(labels = labels - labelType)
+
   def withLabel(labelType: String, labelValue: String) = copy(labels = labels + (labelType -> Some(labelValue)))
 
   def vlan: Option[VlanRange] = labels.getOrElse("vlan", None).flatMap(VlanRange.fromString)
@@ -135,7 +167,7 @@ object Stp {
       case Array(identifier, queryString) if identifier.nonEmpty =>
         val parsedLabels = queryString.split(Pattern.quote("&")).map(parseLabel)
         val labels = if (parsedLabels contains None) None else Some(parsedLabels.map(_.get))
-        labels.map { l => 
+        labels.map { l =>
           Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l: _*))
         }
       case _ =>

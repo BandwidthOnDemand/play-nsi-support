@@ -12,6 +12,7 @@ import org.specs2.matcher.{ Matcher, MatchResult }
 @org.junit.runner.RunWith(classOf[org.specs2.runner.JUnitRunner])
 class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaCheck { outer =>
   private def stp(s: String): Stp = Stp.fromString(s).get
+  private def vlan(s: String): VlanRange = VlanRange.fromString(s).get
 
   private val GenVlanId = Gen.chooseNum(2, 4095).map(Integer.valueOf)
 
@@ -39,6 +40,10 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
     "parse singleton" in {
       VlanRange.fromString("3") must beSome.which(_.isSingleton)
     }
+
+    "calculate intersection" in {
+      vlan("10-20") intersect vlan("18-30") must beSome(vlan("18-20"))
+    }
   }
 
   "STP" should {
@@ -58,7 +63,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       Stp.fromString("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4?vlan=2-1000") must beSome(Stp("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4", SortedMap("vlan" -> Some("2-1000"))))
     }
     "parse with multiple labels" in {
-      Stp.fromString("identifier?vlan=1-200&protected&svlan=1-1000") must beSome(Stp("identifier", SortedMap("vlan" -> Some("1-200"), "protected" -> None, "svlan" -> Some("1-1000"))))
+      Stp.fromString("identifier?vlan=1-200&protected&s-vlan=1-1000") must beSome(Stp("identifier", SortedMap("vlan" -> Some("1-200"), "protected" -> None, "s-vlan" -> Some("1-1000"))))
     }
 
     "parse with embedded question mark" in {
@@ -106,7 +111,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
     "not be compatible STP without S-VLAN" in {
       stp("urn:ogf:network:a?s-vlan=10") must not(beCompatibleWith(stp("urn:ogf:network:a")))
     }
-    
+
     "not be compatible with C-VLAN STP" in {
       stp("urn:ogf:network:a?s-vlan=10") must not(beCompatibleWith(stp("urn:ogf:network:a?vlan=10")))
     }

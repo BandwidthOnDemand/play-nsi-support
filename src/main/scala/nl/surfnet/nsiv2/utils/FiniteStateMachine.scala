@@ -28,7 +28,7 @@ import play.api.Logger
  * Simplified re-implementation of Akka's finite state machine [[akka.actor.FSM]]
  * DSL, without the dependencies on actors.
  */
-abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateData: D) {
+abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateData: D) extends StateMachine[I, O] {
 
   /**
    * Process the given message. Returns `None` if the FSM did not handle the

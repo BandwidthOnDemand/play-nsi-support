@@ -145,7 +145,7 @@ class NsiSoapConversionsSpec extends mutable.Specification {
             </head:nsiHeader>
           </S:Header>
           <S:Body>
-            <S:Fault xmlns:ns4="http://www.w3.org/2003/05/soap-envelope">
+            <S:Fault>
               <faultcode>S:Server</faultcode>
               <faultstring>This operation is not supported by this provider</faultstring>
               <detail>
@@ -175,7 +175,7 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       }
 
       requestAckToStringConversion(requesterMessage.get) must beLike {
-        case Success(xml) => xml must contain("<S:Fault") and contain("<errorId>103</errorId>")
+        case Success(xml) => xml must contain("<soapenv:Fault") and contain("<errorId>103</errorId>")
       }
     }
 

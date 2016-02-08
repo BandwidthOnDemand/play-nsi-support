@@ -119,7 +119,7 @@ object ExtraBodyParsers {
               Done(Left(Results.InternalServerError(
                 <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
                   <S:Body>
-                    <S:Fault xmlns:ns4="http://www.w3.org/2003/05/soap-envelope">
+                    <S:Fault>
                       <faultcode>S:Client</faultcode>
                       <faultstring>Error parsing SOAP request: { error }</faultstring>
                     </S:Fault>
@@ -146,7 +146,7 @@ object ExtraBodyParsers {
         Results.InternalServerError(
           <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
             <S:Body>
-              <S:Fault xmlns:ns4="http://www.w3.org/2003/05/soap-envelope">
+              <S:Fault>
                 <faultcode>S:Client</faultcode>
                 <faultstring>Error parsing NSI message in SOAP request: { error }</faultstring>
               </S:Fault>

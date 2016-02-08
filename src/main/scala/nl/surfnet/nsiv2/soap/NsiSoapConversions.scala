@@ -125,10 +125,10 @@ object NsiSoapConversions {
       marshal(typesFactory.createServiceException(exception)).flatMap { detailBody =>
         Try {
           val doc = createDocument
-          val fault = doc.createElementNS("http://www.w3.org/2003/05/soap-envelope", "S:Fault").tap(doc.appendChild)
-          fault.appendChild(doc.createElement("faultcode")).appendChild(doc.createTextNode("S:Server")) // FIXME or S:Client?
-          fault.appendChild(doc.createElement("faultstring")).appendChild(doc.createTextNode(exception.getText()))
-          fault.appendChild(doc.createElement("detail")).appendChild(doc.importNode(detailBody, true))
+          val fault = doc.createElementNS(SoapNamespaceUri, "soapenv:Fault").tap(doc.appendChild)
+          fault.appendChild(doc.createElementNS(null, "faultcode")).appendChild(doc.createTextNode("soapenv:Server")) // FIXME or S:Client?
+          fault.appendChild(doc.createElementNS(null, "faultstring")).appendChild(doc.createTextNode(exception.getText()))
+          fault.appendChild(doc.createElementNS(null, "detail")).appendChild(doc.importNode(detailBody, true))
           doc.getDocumentElement()
         }
       }
@@ -414,7 +414,9 @@ object NsiSoapConversions {
         bodyElement <- bodyConversion(body)
         document <- Try {
           val document = createDocument
-          val soapEnvelope = document.appendChild(document.createElementNS(SoapNamespaceUri, "soapenv:Envelope"))
+          val soapEnvelope = document.createElementNS(SoapNamespaceUri, "soapenv:Envelope").tap(document.appendChild)
+          soapEnvelope.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:soapenv", SoapNamespaceUri)
+
           val soapHeader = soapEnvelope.appendChild(document.createElementNS(SoapNamespaceUri, "soapenv:Header"))
           val soapBody = soapEnvelope.appendChild(document.createElementNS(SoapNamespaceUri, "soapenv:Body"))
 

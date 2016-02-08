@@ -70,14 +70,11 @@ final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, bo
     NsiRequesterMessage(ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.RequesterProtocolVersion), ack)
 }
 
-final case class NsiErrorVariable(name: String, value: String)
-
-final case class NsiError(id: String, description: String, text: String, variable: Option[NsiErrorVariable]) {
+final case class NsiError(id: String, description: String, text: String, variables: Seq[(String, String)]) {
   override def toString = s"$id: $description: $text"
 
   def toServiceException(nsaId: String, args: (String, String)*) = {
-    val pairs = variable.toSeq.map( v => v.name -> v.value ) ++ args
-    val variables = pairs map { case (t, v) => new TypeValuePairType().withType(t).withValue(v) }
+    val variables = (this.variables ++ args) map { case (t, v) => new TypeValuePairType().withType(t).withValue(v) }
 
     new ServiceExceptionType()
       .withErrorId(id)
@@ -85,10 +82,12 @@ final case class NsiError(id: String, description: String, text: String, variabl
       .withNsaId(nsaId)
       .withVariables(new VariablesType().withVariable(variables.asJava))
   }
+
+  def withText(text: String, variables: (String, String)*): NsiError = copy(text = text, variables = variables)
 }
 
 object NsiError {
-  def apply(id: String, description: String, text: String) = new NsiError(id, description, text, None)
+  def apply(id: String, description: String, text: String) = new NsiError(id, description, text, Seq.empty)
 
   val PayloadError = NsiError("00100", "PAYLOAD_ERROR", "")
   val MissingParameter = NsiError("00101", "MISSING_PARAMETER", "Invalid or missing parameter")

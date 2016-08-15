@@ -2,13 +2,13 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args")
 
 publishArtifact in Test := true
 
-val playVersion = "2.3.9"
+val playVersion = "2.3.10"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "0.3.6",
@@ -28,6 +28,8 @@ val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
 val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
 val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
 val scalazReleases = "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+
+resolvers += Resolver.typesafeRepo("releases")
 
 resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases, scalazReleases )
 

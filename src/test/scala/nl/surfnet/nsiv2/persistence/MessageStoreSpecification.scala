@@ -1,16 +1,12 @@
 package nl.surfnet.nsiv2.persistence
 
-import java.net.URI
 import java.time.Instant
 import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Shrink
-import org.specs2.execute.AsResult
-import play.api.db.DB
 import play.api.test._
-import scala.util.Try
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.soap.Conversion
 

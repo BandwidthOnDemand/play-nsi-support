@@ -12,7 +12,6 @@ import play.api.libs.iteratee._
 import javax.xml.soap._
 import java.io.File
 import nl.surfnet.nsiv2.messages._
-import java.util.concurrent.TimeUnit
 import NsiSoapConversions.NsiXmlDocumentConversion
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])

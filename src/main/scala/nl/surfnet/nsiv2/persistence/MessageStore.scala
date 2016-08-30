@@ -25,7 +25,6 @@ package persistence
 
 import anorm._
 import anorm.SqlParser._
-import java.net.URI
 import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
@@ -34,11 +33,9 @@ import nl.surfnet.nsiv2.soap._
 import nl.surfnet.nsiv2.soap.NsiSoapConversions._
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
-import org.w3c.dom.Document
 import play.api.Logger
 import play.api.data.validation.ValidationError
 import play.api.db.DB
-import play.api.libs.functional.FunctionalBuilder
 import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
 

@@ -1,13 +1,12 @@
 package nl.surfnet.nsiv2.messages
 
-import org.ogf.schemas.nsi._2013._12.connection.types.{ ScheduleType, ReservationRequestCriteriaType }
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import com.google.common.collect.Range
 import scala.math.Ordering.Implicits._
 import scala.collection.immutable.SortedMap
-import org.specs2.matcher.{ Matcher, MatchResult }
+import org.specs2.matcher.Matcher
 
 @org.junit.runner.RunWith(classOf[org.specs2.runner.JUnitRunner])
 class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaCheck { outer =>

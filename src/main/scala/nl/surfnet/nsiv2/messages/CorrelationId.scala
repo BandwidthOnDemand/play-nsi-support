@@ -23,7 +23,6 @@
 package nl.surfnet.nsiv2.messages
 
 import java.util.UUID
-import java.security.SecureRandom
 
 import scala.util.Try
 

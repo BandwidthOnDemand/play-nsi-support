@@ -39,8 +39,6 @@ import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scala.collection.JavaConverters._
-import scala.util.Failure
-import scala.util.Success
 import scala.util.Try
 
 package object messages {

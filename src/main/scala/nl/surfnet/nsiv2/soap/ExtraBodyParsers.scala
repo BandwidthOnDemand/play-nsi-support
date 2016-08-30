@@ -97,7 +97,6 @@ object ExtraBodyParsers {
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
   def tolerantSoap[T](parser: Conversion[T, Array[Byte]], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
-    import scala.language.reflectiveCalls
     Traversable.takeUpTo[Array[Byte]](maxLength)
       .apply(
         Iteratee.consume[Array[Byte]]().map { bytes =>

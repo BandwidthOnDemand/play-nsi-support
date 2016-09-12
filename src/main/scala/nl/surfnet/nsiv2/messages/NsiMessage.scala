@@ -29,10 +29,14 @@ import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import org.ogf.schemas.nsi._2013._12.framework.types._
 
 import scala.collection.JavaConverters._
+import javax.xml.namespace.QName
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
   val RequesterProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.requester+soap")
+
+  val PROVIDER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "providerNSA")
+  val REQUESTER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "requesterNSA")
 }
 
 case class NsiHeaders(correlationId: CorrelationId, requesterNSA: RequesterNsa, providerNSA: String, replyTo: Option[URI], protocolVersion: URI, sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil, connectionTrace: List[ConnectionType] = Nil) {
@@ -41,6 +45,16 @@ case class NsiHeaders(correlationId: CorrelationId, requesterNSA: RequesterNsa, 
 }
 
 trait NsiOperation
+object NsiOperation {
+  val CONNECTION_ID = new QName(QNAME_NSI_TYPES.getNamespaceURI, "connectionId")
+
+  val START_TIME = new QName(QNAME_NSI_TYPES.getNamespaceURI, "startTime")
+  val END_TIME = new QName(QNAME_NSI_TYPES.getNamespaceURI, "endTime")
+
+  val CAPACITY = new QName(QNAME_NSI_POINT_TO_POINT.getNamespaceURI, "capacity")
+
+  val CURRENT_TIME = new QName("currentTime")
+}
 
 sealed trait NsiMessage[+T <: NsiOperation] {
   def headers: NsiHeaders
@@ -70,11 +84,11 @@ final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, bo
     NsiRequesterMessage(ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.RequesterProtocolVersion), ack)
 }
 
-final case class NsiError(id: String, description: String, text: String, variables: Seq[(String, String)]) {
+final case class NsiError(id: String, description: String, text: String, variables: Seq[(QName, String)]) {
   override def toString = s"$id: $description: $text"
 
-  def toServiceException(nsaId: String, args: (String, String)*) = {
-    val variables = (this.variables ++ args) map { case (t, v) => new TypeValuePairType().withType(t).withValue(v) }
+  def toServiceException(nsaId: String, args: (QName, String)*) = {
+    val variables = (this.variables ++ args) map { case (t, v) => new TypeValuePairType().withNamespace(t.getNamespaceURI).withType(t.getLocalPart).withValue(v) }
 
     new ServiceExceptionType()
       .withErrorId(id)
@@ -83,7 +97,8 @@ final case class NsiError(id: String, description: String, text: String, variabl
       .withVariables(new VariablesType().withVariable(variables.asJava))
   }
 
-  def withText(text: String, variables: (String, String)*): NsiError = copy(text = text, variables = variables)
+  def withText(text: String, variables: (QName, String)*): NsiError = copy(text = text, variables = variables)
+  def withVariables(variables: (QName, String)*): NsiError = copy(variables = variables)
 }
 
 object NsiError {
@@ -127,8 +142,9 @@ object NsiError {
   val UnknownStp = NsiError("00701", "UNKNOWN_STP", "Could not find STP in topology database")
   val LabelSwappingNotSupported = NsiError("00703", "LABEL_SWAPPING_NOT_SUPPORTED", "Label swapping is not supported for requested path")
   val StpUnavailable = NsiError("00704", "STP_UNAVAILABLE", "Specified STP already in use")
-  val CapacityUnavailable = NsiError("00705", "CAPACITY_UNAVAILABLE", "Insufficient capacity available for reservation")
-  @deprecated(message = "use CapacityUnavailable", since = "NSI CS 2.1") val BandwidthUnavailable = CapacityUnavailable
+  val CAPACITY_UNAVAILABLE = NsiError("00705", "CAPACITY_UNAVAILABLE", "Insufficient capacity available for reservation")
+  def CapacityUnavailable(capacity: Long) = CAPACITY_UNAVAILABLE.withVariables(NsiOperation.CAPACITY -> capacity.toString)
+
   val DirectionalityMismatch = NsiError("00706", "DIRECTIONALITY_MISMATCH", "Directionality of specified STP does not match requested directionality")
   val InvalidEroMember = NsiError("00707", "INVALID_ERO_MEMBER", "Invalid ERO member")
   val UnknownLabelType = NsiError("00708", "UNKNOWN_LABEL_TYPE", "Specified STP contains an unknown label type")

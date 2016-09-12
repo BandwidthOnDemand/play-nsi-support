@@ -68,7 +68,7 @@ object ExtraBodyParsers {
     if (message.headers.providerNSA == providerNsa) action(message)
     else {
       Logger.info(s"The providerNSA '${message.headers.providerNSA}' does not match the expected providerNSA '$providerNsa'")
-      val serviceException = ServiceException(NsiError.UnsupportedParameter.toServiceException(providerNsa, "providerNSA" -> message.headers.providerNSA))
+      val serviceException = ServiceException(NsiError.UnsupportedParameter.toServiceException(providerNsa, NsiHeaders.PROVIDER_NSA -> message.headers.providerNSA))
       val response = message ackWithCorrectedProviderNsa (providerNsa, serviceException)
       Future.successful(response)
     }
@@ -78,7 +78,7 @@ object ExtraBodyParsers {
     if (message.headers.requesterNSA == requesterNsa) action(message)
     else {
       Logger.info(s"The requesterNSA '${message.headers.requesterNSA}' does not match the expected requesterNSA '$requesterNsa'")
-      val serviceException = ServiceException(NsiError.UnsupportedParameter.toServiceException(requesterNsa, "requesterNSA" -> message.headers.requesterNSA))
+      val serviceException = ServiceException(NsiError.UnsupportedParameter.toServiceException(requesterNsa, NsiHeaders.REQUESTER_NSA -> message.headers.requesterNSA))
       val response = message ackWithCorrectedRequesterNsa (requesterNsa, serviceException)
       Future.successful(response)
     }

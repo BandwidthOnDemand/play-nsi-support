@@ -46,6 +46,13 @@ package object messages {
   type ConnectionId = String
   type GlobalReservationId = URI
 
+  private[messages] val PointToPointObjectFactory = new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
+
+  val NSI_HEADERS_OBJECT_FACTORY = new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
+  val QNAME_NSI_POINT_TO_POINT = PointToPointObjectFactory.createP2Ps(null).getName()
+  val QNAME_NSI_HEADERS = NSI_HEADERS_OBJECT_FACTORY.createNsiHeader(null).getName()
+  val QNAME_NSI_TYPES = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory()).createAcknowledgment(null).getName()
+
   def valueFormat[T](message: String)(parse: String => Option[T], print: T => String): Format[T] = new Format[T] {
     override def reads(json: JsValue): JsResult[T] = json match {
       case JsString(s) => parse(s) match {
@@ -92,9 +99,6 @@ package object messages {
     }
   }
 
-  private val PointToPointObjectFactory = new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
-  private val P2PS_QNAME = PointToPointObjectFactory.createP2Ps(null).getName()
-
   private object JaxbElement {
     def unapply[A](element: JAXBElement[A]): Option[(QName, A)] = Some((element.getName(), element.getValue()))
   }
@@ -105,7 +109,7 @@ package object messages {
       val any = HasXmlAny[A].getAny(a)
       any.removeIf(new Predicate[AnyRef] {
         def test(v: AnyRef) = v match {
-          case JaxbElement(P2PS_QNAME, _: P2PServiceBaseType) => true
+          case JaxbElement(QNAME_NSI_POINT_TO_POINT, _: P2PServiceBaseType) => true
           case _ => false
         }
       })
@@ -119,7 +123,7 @@ package object messages {
     }
 
     def getPointToPointService(): Option[P2PServiceBaseType] = HasXmlAny[A].getAny(a).asScala.collectFirst {
-      case JaxbElement(P2PS_QNAME, p2ps: P2PServiceBaseType) => p2ps
+      case JaxbElement(QNAME_NSI_POINT_TO_POINT, p2ps: P2PServiceBaseType) => p2ps
     }
   }
 

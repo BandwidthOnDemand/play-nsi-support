@@ -128,22 +128,30 @@ package object messages {
   }
 
   final val PROTECTION_PARAMETER_TYPE = "protection"
+  final val PATH_COMPUTATION_ALGORITHM_PARAMETER_TYPE = "pathComputationAlgorithm"
 
   implicit class P2PServiceBaseTypeOps(service: P2PServiceBaseType) {
-    def protectionType_=(protection: Option[ProtectionType]): Unit = {
-      service.getParameter.removeIf(new Predicate[TypeValueType] {
-        def test(v: TypeValueType) = v.getType == PROTECTION_PARAMETER_TYPE
-      })
-      protection.foreach { protection =>
-        service.getParameter.add(new TypeValueType().withType(PROTECTION_PARAMETER_TYPE).withValue(protection.toString))
+    object parameters {
+      def apply(`type`: String): Option[String] = {
+        service.getParameter.asScala
+          .find { _.getType == `type` }
+          .map { _.getValue }
+      }
+
+      def update(`type`: String, value: Option[String]): Unit = {
+        service.getParameter.removeIf(new Predicate[TypeValueType] {
+          def test(v: TypeValueType) = v.getType == `type`
+        })
+        value.foreach { value =>
+          service.getParameter.add(new TypeValueType().withType(`type`).withValue(value))
+        }
       }
     }
 
-    def protectionType: Option[ProtectionType] = {
-      service.getParameter.asScala
-        .find { _.getType == PROTECTION_PARAMETER_TYPE }
-        .map(_.getValue)
-        .flatMap(ProtectionType.fromString)
+    def protectionType: Option[ProtectionType] = parameters(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
+
+    def protectionType_=(protection: Option[ProtectionType]): Unit = {
+      parameters(PROTECTION_PARAMETER_TYPE) = protection.map(_.toString)
     }
 
     def sourceStp: Stp = Stp.fromString(service.getSourceSTP).getOrElse {

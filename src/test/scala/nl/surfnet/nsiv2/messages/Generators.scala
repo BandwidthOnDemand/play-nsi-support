@@ -2,7 +2,6 @@ package nl.surfnet.nsiv2.messages
 
 import java.net.URI
 import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
-import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.soap.Conversion
 import oasis.names.tc.saml._2_0.assertion.AttributeType
 import org.joda.time.DateTime
@@ -50,13 +49,6 @@ object Generators {
   })
 
   implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s => Stp.fromString(s) map Gen.const getOrElse Gen.fail })
-
-  implicit def ArbitraryNillable[A](implicit a: Arbitrary[A]): Arbitrary[Nillable[A]] = Arbitrary {
-    for {
-      x <- arbitrary[A]
-      result <- Gen.oneOf(Nillable.present(x), Nillable.absent[A], Nillable.nil[A])
-    } yield result
-  }
 
   implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(for {
     capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)

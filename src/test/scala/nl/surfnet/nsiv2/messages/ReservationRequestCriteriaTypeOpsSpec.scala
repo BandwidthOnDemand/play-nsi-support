@@ -1,8 +1,6 @@
 package nl.surfnet.nsiv2.messages
 
 import Generators._
-import javax.xml.datatype.XMLGregorianCalendar
-import nl.surfnet.bod.nsi.Nillable
 import org.ogf.schemas.nsi._2013._12.connection.types.{ ReservationConfirmCriteriaType, ReservationRequestCriteriaType }
 
 class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specification with org.specs2.ScalaCheck {
@@ -30,15 +28,15 @@ class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specifica
       }
 
       "default missing start time to confirm criteria" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-        request.getSchedule.withStartTime(Nillable.absent[XMLGregorianCalendar])
+        request.getSchedule.setStartTime(null)
 
         request.toModifiedConfirmCriteria(confirm).get.getSchedule.getStartTime must_== confirm.getSchedule.getStartTime
       }
 
       "overwrite null end time" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-        request.getSchedule.withEndTime(Nillable.absent[XMLGregorianCalendar])
+        request.getSchedule.setEndTime(null)
 
-        request.toModifiedConfirmCriteria(confirm).get.getSchedule.getEndTime must_== Nillable.absent[XMLGregorianCalendar]
+        request.toModifiedConfirmCriteria(confirm).get.getSchedule.getEndTime must beNull
       }
 
       "STPs" >> {

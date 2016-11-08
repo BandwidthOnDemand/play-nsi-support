@@ -27,7 +27,6 @@ import java.util.function.Predicate
 import javax.xml.bind.JAXBElement
 import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
 import javax.xml.namespace.QName
-import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.utils._
 import org.joda.time.{ DateTime, DateTimeZone }
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
@@ -172,9 +171,7 @@ package object messages {
       val confirmP2P = committedP2P.shallowCopy.withCapacity(requestP2P.getCapacity)
 
       val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
-      schedule.withStartTime(
-        schedule.getStartTime orElse new java.util.function.Supplier[Nillable[XMLGregorianCalendar]] { def get = previouslyCommittedCriteria.getSchedule.getStartTime }
-      )
+      if (schedule.getStartTime eq null) schedule.setStartTime(previouslyCommittedCriteria.getSchedule.getStartTime)
 
       val confirmCriteria = new ReservationConfirmCriteriaType()
         .withAny(previouslyCommittedCriteria.getAny)

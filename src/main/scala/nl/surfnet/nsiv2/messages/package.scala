@@ -25,11 +25,10 @@ package nl.surfnet.nsiv2
 import java.net.URI
 import java.util.function.Predicate
 import javax.xml.bind.JAXBElement
-import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
+import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.namespace.QName
 import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.utils._
-import org.joda.time.{ DateTime, DateTimeZone }
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
@@ -77,26 +76,9 @@ package object messages {
     parse = CorrelationId.fromString,
     print = _.toString)
 
-  private[this] val datatypeFactory = DatatypeFactory.newInstance()
-  implicit class DateTimeOps(dt: org.joda.time.ReadableDateTime) {
-    def toXmlGregorianCalendar = {
-      val timezoneInMinutes = dt.getZone.getOffset(dt.getMillis) / (60 * 1000)
-      datatypeFactory.newXMLGregorianCalendar(
-        dt.getYear,
-        dt.getMonthOfYear,
-        dt.getDayOfMonth,
-        dt.getHourOfDay,
-        dt.getMinuteOfHour,
-        dt.getSecondOfMinute,
-        dt.getMillisOfSecond,
-        timezoneInMinutes)
-    }
-  }
-
-  implicit class XmlGregorianCalendarOps(dt: XMLGregorianCalendar) {
-    def toDateTime = {
-      val calendar = dt.toGregorianCalendar
-      new DateTime(calendar.getTimeInMillis, DateTimeZone.forTimeZone(dt.toGregorianCalendar.getTimeZone))
+  implicit class XmlGregorianCalendarOps(cal: XMLGregorianCalendar) {
+    def toInstant = {
+      cal.toGregorianCalendar.toZonedDateTime.toInstant
     }
   }
 

@@ -23,13 +23,14 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
-import javax.xml.datatype.XMLGregorianCalendar
-import org.joda.time.DateTime
-import scala.util.{ Failure, Success, Try }
+import java.time._
 import java.util.GregorianCalendar
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import javax.xml.datatype.DatatypeFactory
+import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
+import nl.surfnet.bod.nsi.Nillable
+import nl.surfnet.nsiv2.messages._
+import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
+import scala.util.{ Failure, Success, Try }
+
 
 package object utils {
   def classpathResourceUri(name: String): URI = {
@@ -67,14 +68,6 @@ package object utils {
   implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar] {
     def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
   }
-  implicit object DateTimeOrdering extends Ordering[DateTime] {
-    def compare(x: DateTime, y: DateTime): Int = x compareTo y
-  }
-
-  implicit class ReadableInstantOps(instant: org.joda.time.ReadableInstant) {
-    def toSqlTimestamp = new java.sql.Timestamp(instant.getMillis)
-    def toJavaInstant = java.time.Instant.ofEpochMilli(instant.getMillis)
-  }
 
   val utc = ZoneId.of("Z")
 
@@ -89,5 +82,19 @@ package object utils {
       val cal = GregorianCalendar.from(instant.toZonedDateTime(zoneId))
       DatatypeFactory.newInstance.newXMLGregorianCalendar(cal)
     }
+  }
+
+  implicit class NillableOps[T] (nillable: Nillable[T]) {
+    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] { def apply(a: A) = f(a) }
+    private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
+
+    def map2[A] (f: T => A) = nillable.map( asJavaFunction1(f) )
+    def fold2[A] (p: T => A, a: => A, n: => A) = nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
+    def toOption (nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
+  }
+
+  implicit class ScheduleTypeOps(schedule: ScheduleType) {
+    def startTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
+    def endTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
   }
 }

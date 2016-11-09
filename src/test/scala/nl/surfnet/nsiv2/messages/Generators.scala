@@ -1,11 +1,13 @@
 package nl.surfnet.nsiv2.messages
 
 import java.net.URI
+import java.time.Instant
+import javax.xml.datatype.XMLGregorianCalendar
 import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.soap.Conversion
+import nl.surfnet.nsiv2.utils._
 import oasis.names.tc.saml._2_0.assertion.AttributeType
-import org.joda.time.DateTime
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReserveType
@@ -16,21 +18,12 @@ import org.ogf.schemas.nsi._2013._12.services.types.DirectionalityType
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import scala.util.Try
 
 object Generators {
 
-  implicit val ArbitraryDateTime: Arbitrary[DateTime] = Arbitrary(for {
-    year <- Gen.choose(1990, 2050)
-    month <- Gen.choose(1, 12)
-    day <- Gen.choose(1, 31)
-    hour <- Gen.choose(0, 23)
-    minute <- Gen.choose(0, 59)
-    second <- Gen.choose(0, 59)
-    result <- Try(Gen.const(new DateTime(year, month, day, hour, minute, second))) getOrElse Gen.fail[DateTime]
-  } yield result)
-
-  implicit val ArbitraryInstant: Arbitrary[java.time.Instant] = Arbitrary(arbitrary[DateTime].map(dt => java.time.Instant.ofEpochMilli(dt.getMillis)))
+  implicit val ArbitraryInstant: Arbitrary[Instant] = Arbitrary(for {
+    timeInMillis <- Gen.choose(0, System.currentTimeMillis() * 3)
+  } yield Instant.ofEpochMilli(timeInMillis))
 
   implicit val ArbitraryCorrelationId: Arbitrary[CorrelationId] = Arbitrary(for {
     leastSigBits <- arbitrary[Long]
@@ -41,13 +34,17 @@ object Generators {
     "https://www.host.invalid/foo/bar", "https://localhost:8443/").map(URI.create))
 
   implicit val ArbitraryScheduleType: Arbitrary[ScheduleType] = Arbitrary(for {
-    startTime <- arbitrary[Option[DateTime]]
-    endTime <- arbitrary[Option[DateTime]]
+    startTime <- arbitrary[Nillable[XMLGregorianCalendar]]
+    endTime <- arbitrary[Nillable[XMLGregorianCalendar]]
   } yield {
     new ScheduleType()
-      .withStartTime(startTime.map(_.toXmlGregorianCalendar).orNull)
-      .withEndTime(endTime.map(_.toXmlGregorianCalendar).orNull)
+      .withStartTime(startTime)
+      .withEndTime(endTime)
   })
+
+  implicit val ArbitraryXMLGregorianCalendar: Arbitrary[XMLGregorianCalendar] = Arbitrary(for {
+    now <- arbitrary[Instant]
+  } yield now.toXMLGregorianCalendar() )
 
   implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s => Stp.fromString(s) map Gen.const getOrElse Gen.fail })
 

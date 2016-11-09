@@ -88,8 +88,9 @@ package object utils {
     private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] { def apply(a: A) = f(a) }
     private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
 
-    def map2[A] (f: T => A) = nillable.map( asJavaFunction1(f) )
+    def map2[A] (f: T => A) = nillable map asJavaFunction1(f)
     def fold2[A] (p: T => A, a: => A, n: => A) = nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
+    def orElse2 (f: => Nillable[T]) = nillable orElse asJavaSupplier(f)
     def toOption (nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
   }
 

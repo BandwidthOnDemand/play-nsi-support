@@ -27,7 +27,6 @@ import java.util.function.Predicate
 import javax.xml.bind.JAXBElement
 import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.namespace.QName
-import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
@@ -155,7 +154,7 @@ package object messages {
 
       val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
       schedule.withStartTime(
-        schedule.getStartTime orElse new java.util.function.Supplier[Nillable[XMLGregorianCalendar]] { def get = previouslyCommittedCriteria.getSchedule.getStartTime }
+        schedule.getStartTime orElse2 previouslyCommittedCriteria.getSchedule.startTime.map2(_.toXMLGregorianCalendar())
       )
 
       val confirmCriteria = new ReservationConfirmCriteriaType()

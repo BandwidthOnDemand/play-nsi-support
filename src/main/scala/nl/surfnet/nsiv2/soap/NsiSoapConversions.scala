@@ -27,6 +27,7 @@ import java.net.URI
 import javax.xml.XMLConstants
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.JAXBElement
+import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.Source
 import javax.xml.transform.TransformerFactory
@@ -161,9 +162,9 @@ object NsiSoapConversions {
       case Provision(connectionId)                         => typesFactory.createProvision(new GenericRequestType().withConnectionId(connectionId))
       case Release(connectionId)                           => typesFactory.createRelease(new GenericRequestType().withConnectionId(connectionId))
       case Terminate(connectionId)                         => typesFactory.createTerminate(new GenericRequestType().withConnectionId(connectionId))
-      case QuerySummary(ids)                               => typesFactory.createQuerySummary(toQueryType(ids))
-      case QuerySummarySync(ids)                           => typesFactory.createQuerySummarySync(toQueryType(ids))
-      case QueryRecursive(ids)                             => typesFactory.createQueryRecursive(toQueryType(ids))
+      case QuerySummary(ids, ifModifiedSince)              => typesFactory.createQuerySummary(toQueryType(ids).withIfModifiedSince(ifModifiedSince.orNull))
+      case QuerySummarySync(ids, ifModifiedSince)          => typesFactory.createQuerySummarySync(toQueryType(ids).withIfModifiedSince(ifModifiedSince.orNull))
+      case QueryRecursive(ids, ifModifiedSince)            => typesFactory.createQueryRecursive(toQueryType(ids).withIfModifiedSince(ifModifiedSince.orNull))
       case QueryNotification(connectionId, start, end)     => typesFactory.createQueryNotification(new QueryNotificationType()
                                                                 .withConnectionId(connectionId)
                                                                 .withStartNotificationId(if (start.isDefined) start.get else null)
@@ -199,9 +200,9 @@ object NsiSoapConversions {
       "provision" -> NsiMessageParser { body: GenericRequestType => Success(Provision(body.getConnectionId())) },
       "release" -> NsiMessageParser { body: GenericRequestType => Success(Release(body.getConnectionId())) },
       "terminate" -> NsiMessageParser { body: GenericRequestType => Success(Terminate(body.getConnectionId())) },
-      "querySummary" -> NsiMessageParser { body: QueryType => Success(QuerySummary(toIds(body))) },
-      "querySummarySync" -> NsiMessageParser { body: QueryType => Success(QuerySummarySync(toIds(body))) },
-      "queryRecursive" -> NsiMessageParser { body: QueryType => Success(QueryRecursive(toIds(body))) },
+      "querySummary" -> NsiMessageParser { body: QueryType => Success(QuerySummary(toIds(body), toIfModifiedSince(body))) },
+      "querySummarySync" -> NsiMessageParser { body: QueryType => Success(QuerySummarySync(toIds(body), toIfModifiedSince(body))) },
+      "queryRecursive" -> NsiMessageParser { body: QueryType => Success(QueryRecursive(toIds(body), toIfModifiedSince(body))) },
       "queryNotification" -> NsiMessageParser { body: QueryNotificationType =>
         Success(QueryNotification(
           body.getConnectionId(),
@@ -236,6 +237,8 @@ object NsiSoapConversions {
       Some(Right(query.getGlobalReservationId().asScala.map(URI.create)))
     else
       None
+
+  private def toIfModifiedSince(query: QueryType): Option[XMLGregorianCalendar] = Option(query.getIfModifiedSince)
 
   private def toQueryType(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]]): QueryType = ids match {
     case Some(Left(connectionIds))         => new QueryType().withConnectionId(connectionIds.asJava)

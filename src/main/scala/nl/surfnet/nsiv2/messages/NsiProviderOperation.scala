@@ -22,6 +22,7 @@
  */
 package nl.surfnet.nsiv2.messages
 
+import javax.xml.datatype.XMLGregorianCalendar
 import org.ogf.schemas.nsi._2013._12.connection.types.ReserveType
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
@@ -69,9 +70,9 @@ case class Release(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 
 case class Terminate(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 
-case class QuerySummary(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]]) extends NsiProviderQuery
-case class QuerySummarySync(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]]) extends NsiProviderQuery
-case class QueryRecursive(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]]) extends NsiProviderQuery
+case class QuerySummary(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
+case class QuerySummarySync(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
+case class QueryRecursive(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
 
 case class QueryNotification(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery
 case class QueryNotificationSync(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery

@@ -22,6 +22,7 @@
  */
 package nl.surfnet.nsiv2.messages
 
+import javax.xml.datatype.XMLGregorianCalendar
 import org.ogf.schemas.nsi._2013._12.connection.types._
 
 sealed trait NsiRequesterOperation extends NsiOperation {
@@ -50,7 +51,7 @@ case class ProvisionConfirmed(connectionId: ConnectionId) extends NsiCommandRepl
 case class ReleaseConfirmed(connectionId: ConnectionId) extends NsiCommandReply
 case class TerminateConfirmed(connectionId: ConnectionId) extends NsiCommandReply
 
-case class QuerySummaryConfirmed(reservations: Seq[QuerySummaryResultType]) extends NsiRequesterOperation
+case class QuerySummaryConfirmed(reservations: Seq[QuerySummaryResultType], lastModified: Option[XMLGregorianCalendar]) extends NsiRequesterOperation
 case class QueryRecursiveConfirmed(reservations: Seq[QueryRecursiveResultType]) extends NsiRequesterOperation
 case class QueryNotificationConfirmed(notifications: Seq[NotificationBaseType]) extends NsiRequesterOperation
 case class QueryResultConfirmed(results: Seq[QueryResultResponseType]) extends NsiRequesterOperation

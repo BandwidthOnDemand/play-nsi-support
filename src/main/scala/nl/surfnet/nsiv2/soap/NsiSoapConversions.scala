@@ -29,13 +29,12 @@ import javax.xml.bind.JAXBContext
 import javax.xml.bind.JAXBElement
 import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.Source
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMResult
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
-import javax.xml.validation.SchemaFactory
+import javax.xml.validation.Schema
 import nl.surfnet.nsiv2.messages._
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.connection.types._
@@ -60,12 +59,7 @@ object NsiSoapConversions {
     Try(string.getBytes("UTF-8"))
   }
 
-  val NsiXmlDocumentConversion = XmlDocumentConversion(
-    "wsdl/soap/soap-envelope-1.1.xsd",
-    "wsdl/2.0/ogf_nsi_framework_headers_v2_0.xsd",
-    "wsdl/2.0/ogf_nsi_connection_types_v2_0.xsd",
-    "wsdl/2.0/saml-schema-assertion-2.0.xsd",
-    "wsdl/2.0/gnsbod.xsd")
+  val NsiXmlDocumentConversion = XmlDocumentConversion(new nl.surfnet.bod.nsi.Validation().getSchema())
 
   def documentToScalaXml(document: Document): scala.xml.Node = {
     val source = new DOMSource(document)
@@ -86,7 +80,8 @@ object NsiSoapConversions {
   private val pointToPointServiceFactory = new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
   private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
   private val samlFactory = new oasis.names.tc.saml._2_0.assertion.ObjectFactory()
-  private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory).map(_.getClass().getPackage().getName())
+  private val pathTraceFactory = new org.ogf.schemas.nsi._2015._04.connection.pathtrace.ObjectFactory()
+  private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory, pathTraceFactory).map(_.getClass().getPackage().getName())
 
   def NsiProviderMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiProviderMessage[T], Document] = (Conversion.build[NsiProviderMessage[T], (Option[NsiHeaders], T)] {
     message => Success((Some(message.headers), message.body))
@@ -334,11 +329,7 @@ object NsiSoapConversions {
   private val NsiHeadersQName = headersFactory.createNsiHeader(null).getName()
   private val NsiConnectionTypesNamespace = typesFactory.createAcknowledgment(null).getName().getNamespaceURI()
 
-  private def XmlDocumentConversion(schemaLocations: String*): Conversion[Document, Array[Byte]] = {
-    val schemaSources = schemaLocations.map(location => new StreamSource(classpathResourceUri(location).toASCIIString()))
-    val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
-    schemaFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
-    val schema = schemaFactory.newSchema(schemaSources.toArray[Source])
+  private def XmlDocumentConversion(schema: Schema): Conversion[Document, Array[Byte]] = {
     val errorHandler = new DefaultHandler() {
       override def error(e: SAXParseException) = throw e
       override def fatalError(e: SAXParseException) = throw e

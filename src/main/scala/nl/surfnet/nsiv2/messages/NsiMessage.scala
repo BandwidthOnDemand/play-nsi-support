@@ -23,12 +23,15 @@
 package nl.surfnet.nsiv2.messages
 
 import java.net.URI
+import javax.xml.bind.JAXBElement
+import javax.xml.namespace.QName
+
+import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionType, ConnectionTraceType }
 
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import org.ogf.schemas.nsi._2013._12.framework.types._
 
 import scala.collection.JavaConverters._
-import javax.xml.namespace.QName
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
@@ -36,6 +39,8 @@ object NsiHeaders {
 
   val PROVIDER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "providerNSA")
   val REQUESTER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "requesterNSA")
+
+  private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
 }
 
 case class NsiHeaders(
@@ -56,6 +61,38 @@ case class NsiHeaders(
     None,
     NsiHeaders.RequesterProtocolVersion
   )
+
+  def connectionTrace: List[ConnectionType] = any collectFirst {
+    case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] => any.getValue().asInstanceOf[ConnectionTraceType].getConnection.asScala.toList
+  } getOrElse Nil
+
+  def withConnectionTrace(trace: List[ConnectionType]) = {
+    val updatedAny = trace match {
+      case Nil =>
+        any filter {
+          case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] => false
+          case _ => true
+        }
+      case trace =>
+        val jaxb = NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava))
+        val updated = any mapConserve {
+          case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] =>
+            jaxb
+          case x =>
+            x
+        }
+        if (any eq updated) jaxb :: any else updated
+    }
+
+    copy(any = updatedAny)
+  }
+
+  def addConnectionTrace(value: String): NsiHeaders = {
+    val oldTrace = connectionTrace
+    val index = if (oldTrace.isEmpty) 0 else oldTrace.map(_.getIndex).max + 1
+    val newTrace = new ConnectionType().withIndex(index).withValue(value) :: oldTrace
+    withConnectionTrace(newTrace)
+  }
 }
 
 trait NsiOperation

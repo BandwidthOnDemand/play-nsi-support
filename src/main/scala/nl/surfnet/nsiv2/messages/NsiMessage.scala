@@ -24,7 +24,6 @@ package nl.surfnet.nsiv2.messages
 
 import java.net.URI
 
-import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import org.ogf.schemas.nsi._2013._12.framework.types._
 
@@ -39,9 +38,24 @@ object NsiHeaders {
   val REQUESTER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "requesterNSA")
 }
 
-case class NsiHeaders(correlationId: CorrelationId, requesterNSA: RequesterNsa, providerNSA: String, replyTo: Option[URI], protocolVersion: URI, sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil, connectionTrace: List[ConnectionType] = Nil) {
-  def forSyncAck: NsiHeaders = copy(replyTo = None, sessionSecurityAttrs = Nil, connectionTrace = Nil)
-  def forAsyncReply: NsiHeaders = copy(replyTo = None, protocolVersion = NsiHeaders.RequesterProtocolVersion, sessionSecurityAttrs = Nil, connectionTrace = Nil)
+case class NsiHeaders(
+    correlationId: CorrelationId,
+    requesterNSA: RequesterNsa,
+    providerNSA: String,
+    replyTo: Option[URI],
+    protocolVersion: URI,
+    sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil,
+    any: List[Object] = Nil,
+    otherAttributes: Map[QName, String] = Map.empty
+) {
+  def forSyncAck: NsiHeaders = NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
+  def forAsyncReply: NsiHeaders = NsiHeaders(
+    correlationId,
+    requesterNSA,
+    providerNSA,
+    None,
+    NsiHeaders.RequesterProtocolVersion
+  )
 }
 
 trait NsiOperation

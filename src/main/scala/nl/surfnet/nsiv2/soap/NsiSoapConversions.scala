@@ -50,7 +50,6 @@ import scala.util.Success
 import scala.util.Try
 import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
-import net.nordu.namespaces._2013._12.gnsbod.ConnectionTraceType
 
 object NsiSoapConversions {
   implicit val ByteArrayToString = Conversion.build[Array[Byte], String] { bytes =>
@@ -289,18 +288,23 @@ object NsiSoapConversions {
       .withProviderNSA(headers.providerNSA)
       .withRequesterNSA(headers.requesterNSA)
       .withSessionSecurityAttr(headers.sessionSecurityAttrs.asJava)
-      .withAny(if (headers.connectionTrace.isEmpty) null else gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(headers.connectionTrace.asJava))))
+      .tap(_.getAny().addAll(headers.any.asJava))
+      .tap(_.getOtherAttributes().putAll(headers.otherAttributes.asJava)))
   } { header =>
     for {
       correlationId <- CorrelationId.fromString(header.getCorrelationId()).toTry(s"invalid correlation id ${header.getCorrelationId()}")
       replyTo <- Try(Option(header.getReplyTo()).map(URI.create))
       protocolVersion <- Try(URI.create(header.getProtocolVersion()))
     } yield {
-      val connectionTrace = header.getAny().asScala collectFirst {
-        case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] => any.getValue().asInstanceOf[ConnectionTraceType].getConnection().asScala.toList
-      } getOrElse(Nil)
-
-      NsiHeaders(correlationId, header.getRequesterNSA(), header.getProviderNSA(), replyTo, protocolVersion, header.getSessionSecurityAttr.asScala.toList, connectionTrace)
+      NsiHeaders(
+        correlationId,
+        header.getRequesterNSA(),
+        header.getProviderNSA(),
+        replyTo,
+        protocolVersion,
+        header.getSessionSecurityAttr.asScala.toList,
+        header.getAny.asScala.toList,
+        header.getOtherAttributes.asScala.toMap)
     }
   }
 

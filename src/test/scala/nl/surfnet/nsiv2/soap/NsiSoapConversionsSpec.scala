@@ -2,13 +2,15 @@ package nl.surfnet.nsiv2.soap
 
 import org.specs2._
 
+import javax.xml.bind.JAXBElement
+import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionTraceType, ConnectionType }
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.messages._
 import nl.surfnet.nsiv2.utils._
+import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
+import scala.collection.JavaConverters._
 import scala.util.Failure
 import scala.util.Success
-import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
-import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class NsiSoapConversionsSpec extends mutable.Specification {
@@ -266,8 +268,8 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
 
       reserveMessage must beLike {
-        case NsiProviderMessage(NsiHeaders(_, _, _, _, _, sessionSecurityAttrs, _), _) =>
-          sessionSecurityAttrs must contain(like[SessionSecurityAttrType] {
+        case NsiProviderMessage(headers: NsiHeaders, _) =>
+          headers.sessionSecurityAttrs must contain(like[SessionSecurityAttrType] {
             case attrs => attrs.getAttributeOrEncryptedAttribute() must haveSize(2)
           }).exactly(1)
       }
@@ -303,9 +305,11 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
 
       reserveMessage must beLike {
-        case NsiProviderMessage(NsiHeaders(_, _, _, _, _, _, connectionTrace), _) =>
-          connectionTrace must haveSize(2)
-          connectionTrace must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
+        case NsiProviderMessage(headers: NsiHeaders, _) =>
+          headers.any must haveSize(1)
+          headers.any(0) must beAnInstanceOf[JAXBElement[_]]
+          headers.any(0).asInstanceOf[JAXBElement[_]].getValue must beAnInstanceOf[ConnectionTraceType]
+          headers.any(0).asInstanceOf[JAXBElement[ConnectionTraceType]].getValue.getConnection.asScala must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
       }
 
       val Success(output) = providerOperationToStringConversion.apply(reserveMessage)

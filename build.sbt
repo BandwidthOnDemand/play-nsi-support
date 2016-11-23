@@ -8,6 +8,11 @@ scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywar
 
 publishArtifact in Test := true
 
+// Disable ScalaDoc generation
+sources in (Compile, doc) := Seq.empty
+publishArtifact in (Compile, packageDoc) := false
+publishArtifact in packageDoc := false
+
 val playVersion = "2.3.10"
 
 libraryDependencies ++= Seq(

@@ -30,8 +30,10 @@ import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionType, ConnectionTraceTy
 
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import org.ogf.schemas.nsi._2013._12.framework.types._
+import org.ogf.schemas.nsi._2015._04.connection.pathtrace.PathTraceType
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
@@ -41,6 +43,7 @@ object NsiHeaders {
   val REQUESTER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "requesterNSA")
 
   private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
+  private val pathTraceFactory = new org.ogf.schemas.nsi._2015._04.connection.pathtrace.ObjectFactory()
 }
 
 case class NsiHeaders(
@@ -50,7 +53,7 @@ case class NsiHeaders(
     replyTo: Option[URI],
     protocolVersion: URI,
     sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil,
-    any: List[Object] = Nil,
+    any: List[AnyRef] = Nil,
     otherAttributes: Map[QName, String] = Map.empty
 ) {
   def forSyncAck: NsiHeaders = NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
@@ -62,29 +65,12 @@ case class NsiHeaders(
     NsiHeaders.RequesterProtocolVersion
   )
 
-  def connectionTrace: List[ConnectionType] = any collectFirst {
-    case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] => any.getValue().asInstanceOf[ConnectionTraceType].getConnection.asScala.toList
-  } getOrElse Nil
+  def connectionTrace: List[ConnectionType] = findAny[ConnectionTraceType].map(_.getConnection.asScala.toList) getOrElse Nil
 
-  def withConnectionTrace(trace: List[ConnectionType]) = {
-    val updatedAny = trace match {
-      case Nil =>
-        any filter {
-          case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] => false
-          case _ => true
-        }
-      case trace =>
-        val jaxb = NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava))
-        val updated = any mapConserve {
-          case any: JAXBElement[_] if any.getValue().isInstanceOf[ConnectionTraceType] =>
-            jaxb
-          case x =>
-            x
-        }
-        if (any eq updated) jaxb :: any else updated
-    }
-
-    copy(any = updatedAny)
+  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = if (trace.isEmpty) {
+    removeAny[ConnectionTraceType]
+  } else {
+    upsertAny(NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava)))
   }
 
   def addConnectionTrace(value: String): NsiHeaders = {
@@ -92,6 +78,32 @@ case class NsiHeaders(
     val index = if (oldTrace.isEmpty) 0 else oldTrace.map(_.getIndex).max + 1
     val newTrace = new ConnectionType().withIndex(index).withValue(value) :: oldTrace
     withConnectionTrace(newTrace)
+  }
+
+  def pathTrace: Option[PathTraceType] = findAny[PathTraceType]
+
+  def withPathTrace(pathTrace: PathTraceType): NsiHeaders = upsertAny(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace))
+
+  private def findAny[T: ClassTag]: Option[T] = any collectFirst {
+    case element: JAXBElement[_] if implicitly[ClassTag[T]].runtimeClass.isInstance(element.getValue()) =>
+      element.getValue.asInstanceOf[T]
+  }
+
+  private def removeAny[T: ClassTag]: NsiHeaders = copy(any = any filter {
+    case element: JAXBElement[_] if implicitly[ClassTag[T]].runtimeClass.isInstance(element.getValue()) =>
+      false
+    case _ =>
+      true
+  })
+
+  private def upsertAny[T: ClassTag](element: JAXBElement[T]): NsiHeaders = {
+    val updatedAny = any mapConserve {
+      case element: JAXBElement[_] if implicitly[ClassTag[T]].runtimeClass.isInstance(element.getValue()) =>
+        element
+      case x =>
+        x
+    }
+    copy(any = if (any eq updatedAny) element :: any else updatedAny)
   }
 }
 

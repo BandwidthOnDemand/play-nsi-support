@@ -29,11 +29,13 @@ sealed trait NsiRequesterOperation extends NsiOperation {
   final def action = this.getClass().getSimpleName()
   final def soapActionUrl: String = s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"
 }
-sealed trait NsiNotification extends NsiRequesterOperation {
-  def connectionId: ConnectionId
+sealed trait NsiRequesterUpdate extends NsiRequesterOperation {
+  def connectionId: ConnectionId;
+}
+sealed trait NsiNotification extends NsiRequesterUpdate {
   def notification: NotificationBaseType
 }
-sealed trait NsiCommandReply extends NsiRequesterOperation
+sealed trait NsiCommandReply extends NsiRequesterUpdate
 
 case class ReserveConfirmed(connectionId: ConnectionId, criteria: ReservationConfirmCriteriaType) extends NsiCommandReply
 case class ReserveFailed(failed: GenericFailedType) extends NsiCommandReply {

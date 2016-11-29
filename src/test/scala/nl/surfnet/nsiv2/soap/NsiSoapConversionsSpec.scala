@@ -306,10 +306,10 @@ class NsiSoapConversionsSpec extends mutable.Specification {
 
       reserveMessage must beLike {
         case NsiProviderMessage(headers: NsiHeaders, _) =>
-          headers.any must haveSize(1)
-          headers.any(0) must beAnInstanceOf[JAXBElement[_]]
-          headers.any(0).asInstanceOf[JAXBElement[_]].getValue must beAnInstanceOf[ConnectionTraceType]
-          headers.any(0).asInstanceOf[JAXBElement[ConnectionTraceType]].getValue.getConnection.asScala must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
+          headers.any.elements must haveSize(1)
+          headers.any.elements(0) must beAnInstanceOf[JAXBElement[_]]
+          headers.any.elements(0).asInstanceOf[JAXBElement[_]].getValue must beAnInstanceOf[ConnectionTraceType]
+          headers.any.elements(0).asInstanceOf[JAXBElement[ConnectionTraceType]].getValue.getConnection.asScala must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
       }
 
       val Success(output) = providerOperationToStringConversion.apply(reserveMessage)

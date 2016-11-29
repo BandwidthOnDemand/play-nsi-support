@@ -288,7 +288,7 @@ object NsiSoapConversions {
       .withProviderNSA(headers.providerNSA)
       .withRequesterNSA(headers.requesterNSA)
       .withSessionSecurityAttr(headers.sessionSecurityAttrs.asJava)
-      .tap(_.getAny().addAll(headers.any.asJava))
+      .tap(_.getAny().addAll(headers.any.elements.asJava))
       .tap(_.getOtherAttributes().putAll(headers.otherAttributes.asJava)))
   } { header =>
     for {
@@ -303,7 +303,7 @@ object NsiSoapConversions {
         replyTo,
         protocolVersion,
         header.getSessionSecurityAttr.asScala.toList,
-        header.getAny.asScala.toList,
+        AnyXml(header.getAny.asScala.toList),
         header.getOtherAttributes.asScala.toMap)
     }
   }

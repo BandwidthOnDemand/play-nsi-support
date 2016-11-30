@@ -22,13 +22,74 @@
  */
 package nl.surfnet.nsiv2.messages
 
+import javax.xml.bind.JAXBElement
+import javax.xml.namespace.QName
 import org.ogf.schemas.nsi._2013._12.connection.types.{ChildSummaryType, QuerySummaryResultCriteriaType, ReservationConfirmCriteriaType, ReservationRequestCriteriaType}
+import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
+
+/**
+ * Wraps an JAXB XML any list and tries to correctly implement equals and hashCode for data wrapped in JAXBElement[_].
+ *
+ * Also provides utility methods for manipulating the XML elements.
+ */
+class XmlAny private (val elements: List[AnyRef]) {
+
+  override def equals(obj: Any): Boolean = obj match {
+    case that: XmlAny =>
+      unwrapJaxbElements(this.elements) == unwrapJaxbElements(that.elements)
+    case _ =>
+      false
+  }
+
+  override def hashCode(): Int = unwrapJaxbElements(elements).##
+
+  override def toString(): String = unwrapJaxbElements(elements).mkString("XmlAny(", ",", ")")
+
+  def find[T: ClassTag](nullElement: JAXBElement[T]): Seq[T] = elements collect {
+    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
+  }
+
+  def findFirst[T: ClassTag](nullElement: JAXBElement[T]): Option[T] = elements collectFirst {
+    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
+  }
+
+  def remove(nullElement: JAXBElement[_]): XmlAny = XmlAny(elements filter {
+    case element: JAXBElement[_] if element.getName() == nullElement.getName =>
+      false
+    case _ =>
+      true
+  })
+
+  def update(element: JAXBElement[_]): XmlAny = XmlAny(element :: remove(element).elements)
+
+  private def unwrapJaxbElements(any: Seq[AnyRef]) = any.map {
+    case jaxb: JAXBElement[_] => XmlAny.Element(jaxb.getName(), jaxb.isNil(), jaxb.getValue())
+    case other                => other
+  }
+}
+object XmlAny {
+  def empty = apply(Nil)
+  def apply(elements: Seq[AnyRef]): XmlAny = new XmlAny(elements.toList)
+  def unapply(any: XmlAny): Option[List[AnyRef]] = Some(any.elements)
+
+  case class Element[T] private (name: QName, nil: Boolean, value: T)
+  object Element {
+    def unapply(any: Any): Option[(QName, Option[Any])] = any match {
+      case element: JAXBElement[_] =>
+        Some((element.getName(), if (element.isNil()) None else Option(element.getValue())))
+      case _ =>
+        None
+    }
+  }
+}
 
 /**
  * Type class for JAXB generated types that have an XML any element.
  */
 trait HasXmlAny[A] {
   def getAny(a: A): java.util.List[AnyRef]
+  def any(a: A): XmlAny = XmlAny(getAny(a).asScala.toList)
 }
 object HasXmlAny {
   def apply[A](implicit hasXmlAny: HasXmlAny[A]) = hasXmlAny

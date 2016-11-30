@@ -303,7 +303,7 @@ object NsiSoapConversions {
         replyTo,
         protocolVersion,
         header.getSessionSecurityAttr.asScala.toList,
-        AnyXml(header.getAny.asScala.toList),
+        XmlAny(header.getAny.asScala.toList),
         header.getOtherAttributes.asScala.toMap)
     }
   }

@@ -24,9 +24,7 @@ package nl.surfnet.nsiv2
 
 import java.net.URI
 import java.util.function.Predicate
-import javax.xml.bind.JAXBElement
 import javax.xml.datatype.XMLGregorianCalendar
-import javax.xml.namespace.QName
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
@@ -81,9 +79,6 @@ package object messages {
     }
   }
 
-  private object JaxbElement {
-    def unapply[A](element: JAXBElement[A]): Option[(QName, A)] = Some((element.getName(), element.getValue()))
-  }
   implicit class XmlPointToPointServiceOps[A: HasXmlAny](a: A) {
     def setPointToPointService(service: P2PServiceBaseType): Unit = {
       val element = PointToPointObjectFactory.createP2Ps(service)
@@ -91,7 +86,7 @@ package object messages {
       val any = HasXmlAny[A].getAny(a)
       any.removeIf(new Predicate[AnyRef] {
         def test(v: AnyRef) = v match {
-          case JaxbElement(QNAME_NSI_POINT_TO_POINT, _: P2PServiceBaseType) => true
+          case XmlAny.Element(QNAME_NSI_POINT_TO_POINT, Some(_: P2PServiceBaseType)) => true
           case _ => false
         }
       })
@@ -105,7 +100,7 @@ package object messages {
     }
 
     def getPointToPointService(): Option[P2PServiceBaseType] = HasXmlAny[A].getAny(a).asScala.collectFirst {
-      case JaxbElement(QNAME_NSI_POINT_TO_POINT, p2ps: P2PServiceBaseType) => p2ps
+      case XmlAny.Element(QNAME_NSI_POINT_TO_POINT, Some(p2ps: P2PServiceBaseType)) => p2ps
     }
   }
 

@@ -23,7 +23,6 @@
 package nl.surfnet.nsiv2.messages
 
 import java.net.URI
-import javax.xml.bind.JAXBElement
 import javax.xml.namespace.QName
 
 import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionType, ConnectionTraceType }
@@ -33,35 +32,6 @@ import org.ogf.schemas.nsi._2013._12.framework.types._
 import org.ogf.schemas.nsi._2015._04.connection.pathtrace.PathTraceType
 
 import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
-
-/**
- * Wraps an JAXB XML any list and tries to correctly implement equals and hashCode for data wrapped in JAXBElement[_].
- */
-class AnyXml private (val elements: List[AnyRef]) {
-  private case class Element[T](name: QName, nil: Boolean, value: T)
-
-  override def equals(obj: Any): Boolean = obj match {
-    case that: AnyXml =>
-      unwrapJaxbElements(this.elements) == unwrapJaxbElements(that.elements)
-    case _ =>
-      false
-  }
-
-  override def hashCode(): Int = unwrapJaxbElements(elements).##
-
-  override def toString(): String = unwrapJaxbElements(elements).mkString("AnyXML(", ",", ")")
-
-  private def unwrapJaxbElements(any: Seq[AnyRef]) = any.map {
-    case jaxb: JAXBElement[_] => Element(jaxb.getName(), jaxb.isNil(), jaxb.getValue())
-    case other                => other
-  }
-}
-object AnyXml {
-  def empty = apply(Vector.empty)
-  def apply(elements: Seq[AnyRef]) = new AnyXml(elements.toList)
-  def unapply(any: AnyXml): Option[List[AnyRef]] = Some(any.elements)
-}
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
@@ -83,7 +53,7 @@ case class NsiHeaders(
     replyTo: Option[URI],
     protocolVersion: URI,
     sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil,
-    any: AnyXml = AnyXml.empty,
+    any: XmlAny = XmlAny.empty,
     otherAttributes: Map[QName, String] = Map.empty
 ) {
   def forSyncAck: NsiHeaders = NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
@@ -96,13 +66,13 @@ case class NsiHeaders(
     NsiHeaders.RequesterProtocolVersion
   )
 
-  def connectionTrace: List[ConnectionType] = findAny(NsiHeaders.NullConnectionTraceElement).map(_.getConnection.asScala.toList) getOrElse Nil
+  def connectionTrace: List[ConnectionType] = any.findFirst(NsiHeaders.NullConnectionTraceElement).map(_.getConnection.asScala.toList) getOrElse Nil
 
-  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = if (trace.isEmpty) {
-    removeAny(NsiHeaders.NullConnectionTraceElement)
+  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any = if (trace.isEmpty) {
+    any.remove(NsiHeaders.NullConnectionTraceElement)
   } else {
-    upsertAny(NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava)))
-  }
+    any.update(NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava)))
+  })
 
   def addConnectionTrace(value: String): NsiHeaders = {
     val oldTrace = connectionTrace
@@ -111,25 +81,9 @@ case class NsiHeaders(
     withConnectionTrace(newTrace)
   }
 
-  def pathTrace: Option[PathTraceType] = findAny(NsiHeaders.NullPathTraceElement)
+  def pathTrace: Option[PathTraceType] = any.findFirst(NsiHeaders.NullPathTraceElement)
 
-  def withPathTrace(pathTrace: PathTraceType): NsiHeaders = upsertAny(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace))
-
-  private def findAny[T: ClassTag](nullElement: JAXBElement[T]): Option[T] = any.elements collectFirst {
-    case element: JAXBElement[_] if element.getName == nullElement.getName =>
-      implicitly[ClassTag[T]].runtimeClass.cast(element.getValue).asInstanceOf[T]
-  }
-
-  private def removeAny[T](nullElement: JAXBElement[T]): NsiHeaders = copy(any = AnyXml(any.elements filter {
-    case element: JAXBElement[_] if element.getName() == nullElement.getName =>
-      false
-    case _ =>
-      true
-  }))
-
-  private def upsertAny[T](element: JAXBElement[T]): NsiHeaders = {
-    copy(any = AnyXml(element :: removeAny(element).any.elements))
-  }
+  def withPathTrace(pathTrace: PathTraceType): NsiHeaders = copy(any = any.update(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace)))
 }
 
 trait NsiOperation

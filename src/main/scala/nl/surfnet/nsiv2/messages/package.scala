@@ -180,6 +180,10 @@ package object messages {
     def version: Option[Int] = if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
 
     def modifiedCapacity: Option[Long] = requestCriteria.findFirstAny(NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
+      .orElse(
+        // Look in P2PServiceBaseType for backwards compatibility with replayed messages
+        requestCriteria.pointToPointService.map(_.getCapacity)
+      )
     def withModifiedCapacity(capacity: Long): ReservationRequestCriteriaType = {
       requestCriteria.updateAny(PointToPointObjectFactory.createCapacity(capacity))
       requestCriteria

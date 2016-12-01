@@ -90,6 +90,29 @@ object XmlAny {
 trait HasXmlAny[A] {
   def getAny(a: A): java.util.List[AnyRef]
   def any(a: A): XmlAny = XmlAny(getAny(a).asScala.toList)
+
+  def findAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): List[T] = getAny(a).asScala.collect {
+    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
+  }(collection.breakOut)
+
+  def findFirstAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): Option[T] = getAny(a).asScala collectFirst {
+    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
+  }
+
+  def removeAny(a: A, nullElement: JAXBElement[_]): Boolean = getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
+    override def test(any: AnyRef): Boolean = any match {
+      case element: JAXBElement[_] if element.getName() == nullElement.getName =>
+        true
+      case _ =>
+        false
+    }
+  })
+
+  def updateAny(a: A, element: JAXBElement[_]): Unit = {
+    removeAny(a, element)
+    getAny(a).add(element)
+    ()
+  }
 }
 object HasXmlAny {
   def apply[A](implicit hasXmlAny: HasXmlAny[A]) = hasXmlAny

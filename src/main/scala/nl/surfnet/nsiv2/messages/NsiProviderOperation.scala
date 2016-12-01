@@ -26,6 +26,8 @@ import javax.xml.datatype.XMLGregorianCalendar
 import org.ogf.schemas.nsi._2013._12.connection.types.ReserveType
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
+import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
+import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
 
 sealed trait NsiProviderOperation extends NsiOperation {
   def action: String = this.getClass().getSimpleName()
@@ -45,21 +47,32 @@ sealed trait NsiProviderUpdateCommand extends NsiProviderCommand {
 
 sealed trait Reserve extends NsiProviderCommand {
   override def action = "Reserve"
-
-  def body: ReserveType
-
-  def criteria: ReservationRequestCriteriaType = body.getCriteria
-  def service: Option[P2PServiceBaseType] = criteria.getPointToPointService()
 }
 case class InitialReserve(body: ReserveType) extends Reserve {
   override def optionalConnectionId: Option[ConnectionId] = None
 
+  def criteria: ReservationRequestCriteriaType = body.getCriteria
+  def service: Option[P2PServiceBaseType] = criteria.any.findFirst(InitialReserve.NULL_P2PS_SERVICE_BASE_TYPE)
+
   require(body.getConnectionId eq null, "initial reserve must not have connectionId")
+}
+object InitialReserve {
+  private val NULL_P2PS_SERVICE_BASE_TYPE = PointToPointObjectFactory.createP2Ps(null)
 }
 case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpdateCommand {
   def connectionId = body.getConnectionId
 
+  def criteria: ReservationRequestCriteriaType = body.getCriteria
+
+  def schedule: Option[ScheduleType] = Option(criteria.getSchedule)
+  def capacity: Option[Long] = criteria.any.findFirst(ModifyReserve.NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
+  def parameters: Seq[TypeValueType] = criteria.any.find(ModifyReserve.NULL_PARAMETER_P2PS_ELEMENT)
+
   require(connectionId ne null, "modify must have connectionId")
+}
+object ModifyReserve {
+  private val NULL_CAPACITY_P2PS_ELEMENT = PointToPointObjectFactory.createCapacity(null)
+  private val NULL_PARAMETER_P2PS_ELEMENT = PointToPointObjectFactory.createParameter(null)
 }
 
 case class ReserveCommit(connectionId: ConnectionId) extends NsiProviderUpdateCommand

@@ -37,6 +37,8 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scala.collection.JavaConverters._
 import scala.util.Try
+import javax.xml.bind.JAXBElement
+import scala.reflect.ClassTag
 
 package object messages {
   type RequesterNsa = String
@@ -47,8 +49,13 @@ package object messages {
 
   val NSI_HEADERS_OBJECT_FACTORY = new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
   val QNAME_NSI_POINT_TO_POINT = PointToPointObjectFactory.createP2Ps(null).getName()
+  val QNAME_NSI_P2PS_CAPACITY = PointToPointObjectFactory.createCapacity(null).getName()
   val QNAME_NSI_HEADERS = NSI_HEADERS_OBJECT_FACTORY.createNsiHeader(null).getName()
   val QNAME_NSI_TYPES = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory()).createAcknowledgment(null).getName()
+
+  private val NULL_P2PS_ELEMENT = PointToPointObjectFactory.createP2Ps(null)
+  private val NULL_CAPACITY_P2PS_ELEMENT = PointToPointObjectFactory.createCapacity(null)
+  private val NULL_PARAMETER_P2PS_ELEMENT = PointToPointObjectFactory.createParameter(null)
 
   def valueFormat[T](message: String)(parse: String => Option[T], print: T => String): Format[T] = new Format[T] {
     override def reads(json: JsValue): JsResult[T] = json match {
@@ -79,29 +86,22 @@ package object messages {
     }
   }
 
+  implicit class HasXmlAnyOps[A: HasXmlAny](a: A) {
+    def any: XmlAny = HasXmlAny[A].any(a)
+
+    def findAny[T: ClassTag](nullElement: JAXBElement[T]) = HasXmlAny[A].findAny(a, nullElement)
+    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]) = HasXmlAny[A].findFirstAny(a, nullElement)
+    def removeAny(nullElement: JAXBElement[_]) = HasXmlAny[A].removeAny(a, nullElement)
+    def updateAny(element: JAXBElement[_]) = HasXmlAny[A].updateAny(a, element)
+  }
+
   implicit class XmlPointToPointServiceOps[A: HasXmlAny](a: A) {
-    def setPointToPointService(service: P2PServiceBaseType): Unit = {
-      val element = PointToPointObjectFactory.createP2Ps(service)
-
-      val any = HasXmlAny[A].getAny(a)
-      any.removeIf(new Predicate[AnyRef] {
-        def test(v: AnyRef) = v match {
-          case XmlAny.Element(QNAME_NSI_POINT_TO_POINT, Some(_: P2PServiceBaseType)) => true
-          case _ => false
-        }
-      })
-      any.add(element)
-      ()
-    }
-
     def withPointToPointService(service: P2PServiceBaseType): A = {
-      setPointToPointService(service)
+      HasXmlAny[A].updateAny(a, PointToPointObjectFactory.createP2Ps(service))
       a
     }
 
-    def getPointToPointService(): Option[P2PServiceBaseType] = HasXmlAny[A].getAny(a).asScala.collectFirst {
-      case XmlAny.Element(QNAME_NSI_POINT_TO_POINT, Some(p2ps: P2PServiceBaseType)) => p2ps
-    }
+    def pointToPointService: Option[P2PServiceBaseType] = HasXmlAny[A].findFirstAny(a, NULL_P2PS_ELEMENT)
   }
 
   final val PROTECTION_PARAMETER_TYPE = "protection"
@@ -142,10 +142,14 @@ package object messages {
 
   implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {
     def toModifiedConfirmCriteria(previouslyCommittedCriteria: ReservationConfirmCriteriaType): Try[ReservationConfirmCriteriaType] = for {
-      committedP2P <- previouslyCommittedCriteria.getPointToPointService().toTry(s"point2point service is missing from committed criteria")
-      requestP2P <- requestCriteria.getPointToPointService().toTry(s"point2point service is missing from request criteria")
+      committedP2P <- previouslyCommittedCriteria.pointToPointService.toTry(s"point2point service is missing from committed criteria")
     } yield {
-      val confirmP2P = committedP2P.shallowCopy.withCapacity(requestP2P.getCapacity)
+      val confirmP2P = committedP2P.shallowCopy
+
+      requestCriteria.modifiedCapacity.foreach(confirmP2P.setCapacity)
+      requestCriteria.modifiedParameters.foreach { parameter =>
+        confirmP2P.parameters(parameter.getType) = Some(parameter.getValue)
+      }
 
       val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
       schedule.withStartTime(
@@ -167,13 +171,25 @@ package object messages {
         .withAny(requestCriteria.getAny)
         .withSchedule(new ScheduleType())
         .withServiceType(requestCriteria.getServiceType)
-        .withPointToPointService(requestCriteria.getPointToPointService().get.shallowCopy.withSourceSTP(fullySpecifiedSource).withDestSTP(fullySpecifiedDest))
+        .withPointToPointService(requestCriteria.pointToPointService.get.shallowCopy.withSourceSTP(fullySpecifiedSource).withDestSTP(fullySpecifiedDest))
         .withVersion(0))
 
     /** Schedule is optional. */
     def schedule: Option[ScheduleType] = Option(requestCriteria.getSchedule)
 
     def version: Option[Int] = if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
+
+    def modifiedCapacity: Option[Long] = requestCriteria.findFirstAny(NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
+    def withModifiedCapacity(capacity: Long): ReservationRequestCriteriaType = {
+      requestCriteria.updateAny(PointToPointObjectFactory.createCapacity(capacity))
+      requestCriteria
+    }
+
+    def modifiedParameters: Seq[TypeValueType] = requestCriteria.findAny(NULL_PARAMETER_P2PS_ELEMENT)
+    def withModifiedParameters(parameters: TypeValueType*) = {
+      requestCriteria.removeAny(NULL_PARAMETER_P2PS_ELEMENT)
+      requestCriteria.getAny().addAll(parameters.map(PointToPointObjectFactory.createParameter).asJava)
+    }
   }
 
   implicit class ReservationConfirmCriteriaTypeOps(criteria: ReservationConfirmCriteriaType) {

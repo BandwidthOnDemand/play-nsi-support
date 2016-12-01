@@ -10,7 +10,7 @@ class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specifica
   "conversion to confirm criteria" should {
     "initial criteria" >> {
       "use specified STPs" in prop { (request: ReservationRequestCriteriaType, source: Stp, dest: Stp) =>
-        val service = request.toInitialConfirmCriteria(source.toString, dest.toString).get.getPointToPointService.get
+        val service = request.toInitialConfirmCriteria(source.toString, dest.toString).get.pointToPointService.get
         service.getSourceSTP must_== source.toString
         service.getDestSTP must_== dest.toString
       }
@@ -43,8 +43,8 @@ class ReservationRequestCriteriaTypeOpsSpec extends org.specs2.mutable.Specifica
 
       "STPs" >> {
         "copy STPs from committed version" in prop { (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-          val committed = confirm.getPointToPointService().get
-          val modified = request.toModifiedConfirmCriteria(confirm).get.getPointToPointService.get
+          val committed = confirm.pointToPointService.get
+          val modified = request.toModifiedConfirmCriteria(confirm).get.pointToPointService.get
           modified.getSourceSTP must_== committed.getSourceSTP
           modified.getDestSTP must_== committed.getDestSTP
         }

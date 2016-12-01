@@ -179,14 +179,19 @@ object NsiSoapConversions {
   } {
     messageFactories(Map[String, NsiMessageParser[NsiProviderOperation]](
       "reserve" -> NsiMessageParser { (body: ReserveType) =>
-        for {
-          criteria <- Conversion.invert(body.getCriteria())
-          service <- criteria.getPointToPointService().toTry("reserve is missing point2point service")
-        } yield {
-          if (body.getConnectionId eq null)
+        if (body.getConnectionId eq null) {
+          for {
+            _ <- Conversion.invert(body.getCriteria)
+            service <- body.getCriteria.pointToPointService.toTry("initial reserve is missing point2point service")
+          } yield {
             InitialReserve(body)
-          else
+          }
+        } else {
+          for {
+            criteria <- Conversion.invert(body.getCriteria)
+          } yield {
             ModifyReserve(body)
+          }
         }
       },
       "reserveCommit" -> NsiMessageParser { body: GenericRequestType => Success(ReserveCommit(body.getConnectionId())) },

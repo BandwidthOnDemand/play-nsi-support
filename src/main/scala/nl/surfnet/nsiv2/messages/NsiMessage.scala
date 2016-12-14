@@ -175,6 +175,9 @@ object NsiError {
   @deprecated(message = "use GenericInternalError", since = "NSI CS 2.1") val InternalError = GenericInternalError
   val InternalNrmError = NsiError("00501", "INTERNAL_NRM_ERROR", "An internal NRM error has caused a message processing failure")
 
+  val ChildSegmentError = NsiError("00502", "CHILD_SEGMENT_ERROR", "Child connection segment error is present")
+  val MessageDeliveryError = NsiError("00503", "MESSAGE_DELIVERY_ERROR", "Failed message delivery to peer NSA")
+
   val GenericResourceUnavailable = NsiError("00600", "GENERIC_RESOURCE_UNAVAILABLE", "A requested resource is not available")
   @deprecated(message = "use GenericResourceUnavailable", since = "NSI CS 2.1") val ResourceUnavailable = GenericResourceUnavailable
 
@@ -195,5 +198,4 @@ object NsiError {
 
   val GenericRmError = NsiError("00800", "GENERIC_RM_ERROR", "An internal (N)RM error has caused a message processing failure")
 
-  @deprecated(message = "?", since = "NSI CS V2.1") val ChildError = NsiError("???", "CHILD_ERROR", "One or more children reported an error. See the child exceptions for details")
 }

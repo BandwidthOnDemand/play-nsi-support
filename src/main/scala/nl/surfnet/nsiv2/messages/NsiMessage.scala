@@ -171,8 +171,8 @@ object NsiError {
   val NsaLookupError = NsiError("00406", "NSA_LOOKUP_ERROR", "Cannot map networkId to service interface")
   val NoServicePlanePathFound = NsiError("00407", "NO_SERVICEPLANE_PATH_FOUND", "No service plane path for selected connection segments")
 
-  val GenericInternalError = NsiError("00500", "GENERIC_INTERNAL_ERROR", "An internal error has caused a message processing failure")
-  @deprecated(message = "use GenericInternalError", since = "NSI CS 2.1") val InternalError = GenericInternalError
+  val GenericNsaError = NsiError("00500", "GENERIC_NSA_ERROR", "An internal error has caused a message processing failure")
+  @deprecated(message = "use GenericInternalError", since = "NSI CS 2.1") val InternalError = GenericNsaError
   val InternalNrmError = NsiError("00501", "INTERNAL_NRM_ERROR", "An internal NRM error has caused a message processing failure")
 
   val ChildSegmentError = NsiError("00502", "CHILD_SEGMENT_ERROR", "Child connection segment error is present")

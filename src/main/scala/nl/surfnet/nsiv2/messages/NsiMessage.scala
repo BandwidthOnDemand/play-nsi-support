@@ -105,12 +105,12 @@ sealed trait NsiMessage[+T <: NsiOperation] {
 }
 
 final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, body: T) extends NsiMessage[T] {
-  def ack(acknowledgement: NsiAcknowledgement = GenericAck()): NsiProviderMessage[NsiAcknowledgement] = ack(headers, acknowledgement)
+  def ack[U <: NsiAcknowledgement](acknowledgement: U = GenericAck()): NsiProviderMessage[U] = ack(headers, acknowledgement)
 
   def ackWithCorrectedProviderNsa(providerNsa: String, acknowledgement: NsiAcknowledgement = GenericAck()): NsiProviderMessage[NsiAcknowledgement] =
     ack(headers.copy(providerNSA = providerNsa), acknowledgement)
 
-  private def ack(ackHeaders: NsiHeaders, ack: NsiAcknowledgement) =
+  private def ack[U <: NsiAcknowledgement](ackHeaders: NsiHeaders, ack: U) =
     NsiProviderMessage(ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.ProviderProtocolVersion), ack)
 
   def reply(reply: NsiRequesterOperation) = NsiRequesterMessage(headers.forAsyncReply, reply)

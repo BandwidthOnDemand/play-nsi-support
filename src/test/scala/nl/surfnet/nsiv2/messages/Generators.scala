@@ -5,7 +5,6 @@ import java.time.Instant
 import javax.xml.datatype.XMLGregorianCalendar
 import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 import nl.surfnet.bod.nsi.Nillable
-import nl.surfnet.nsiv2.soap.Conversion
 import nl.surfnet.nsiv2.utils._
 import oasis.names.tc.saml._2_0.assertion.AttributeType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
@@ -83,9 +82,16 @@ object Generators {
     .withPointToPointService(service)
     .withVersion(version.map(Integer.valueOf).orNull))
 
-  implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] = Arbitrary(arbitrary[ReservationRequestCriteriaType].flatMap { criteria =>
-    Conversion[ReservationConfirmCriteriaType, ReservationRequestCriteriaType].invert(criteria) map Gen.const getOrElse Gen.fail
-  })
+  implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] = Arbitrary(for {
+    schedule <- arbitrary[ScheduleType]
+    serviceType <- Gen.oneOf("service-type-1", "service-type-2")
+    service <- arbitrary[P2PServiceBaseType]
+    version <- arbitrary[Int]
+  } yield new ReservationConfirmCriteriaType()
+    .withSchedule(schedule)
+    .withServiceType(serviceType)
+    .withPointToPointService(service)
+    .withVersion(version))
 
   implicit val ArbitraryReserveType: Arbitrary[ReserveType] = Arbitrary(for {
     criteria <- arbitrary[ReservationRequestCriteriaType]

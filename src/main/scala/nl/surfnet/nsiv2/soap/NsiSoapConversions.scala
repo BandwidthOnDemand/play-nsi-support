@@ -181,17 +181,12 @@ object NsiSoapConversions {
       "reserve" -> NsiMessageParser { (body: ReserveType) =>
         if (body.getConnectionId eq null) {
           for {
-            _ <- Conversion.invert(body.getCriteria)
             service <- body.getCriteria.pointToPointService.toTry("initial reserve is missing point2point service")
           } yield {
             InitialReserve(body)
           }
         } else {
-          for {
-            criteria <- Conversion.invert(body.getCriteria)
-          } yield {
-            ModifyReserve(body)
-          }
+          Success(ModifyReserve(body))
         }
       },
       "reserveCommit" -> NsiMessageParser { body: GenericRequestType => Success(ReserveCommit(body.getConnectionId())) },

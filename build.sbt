@@ -18,7 +18,7 @@ publishArtifact in (Test, packageDoc) := false
 val playVersion = "2.3.10"
 
 libraryDependencies ++= Seq(
-  "nl.surfnet.bod" % "bod-nsi" % "2.1.2",
+  "nl.surfnet.bod" % "bod-nsi" % "2.1.4",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.2",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-jdbc" % playVersion,

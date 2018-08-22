@@ -58,7 +58,7 @@ object NsiSoapConversions {
     Try(string.getBytes("UTF-8"))
   }
 
-  val NsiXmlDocumentConversion = XmlDocumentConversion(new nl.surfnet.bod.nsi.Validation().getSchema())
+  val NsiXmlDocumentConversion = XmlDocumentConversion(new nl.surfnet.bod.nsi.Validation(nl.surfnet.bod.nsi.Validation.NSI_SCHEMAS).getSchema())
 
   def documentToScalaXml(document: Document): scala.xml.Node = {
     val source = new DOMSource(document)

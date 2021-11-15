@@ -37,9 +37,11 @@ trait SoapWebService {
   val WsdlPath: String
   val WsdlBasename: String
 
+  def actionBuilder: DefaultActionBuilder
+
   def serviceUrl: String
 
-  def wsdl = Action.async { implicit request =>
+  def wsdl = actionBuilder.async { implicit request =>
     if (request.getQueryString("wsdl").isDefined || request.getQueryString("WSDL").isDefined)
       wsdlOrXsd(WsdlBasename)(request)
     else
@@ -54,7 +56,7 @@ trait SoapWebService {
       s"""<soap:address location="$serviceUrl" />""")
   }
 
-  private def serveWsdl(path: String)(transform: RequestHeader => String => String) = Action { implicit request =>
+  private def serveWsdl(path: String)(transform: RequestHeader => String => String) = actionBuilder { implicit request =>
     readClasspathWsdl(path).map(transform(request)).map { body =>
       Ok(body).as(ContentTypes.XML)
     }.getOrElse {

@@ -28,22 +28,19 @@ import javax.xml.soap.SOAPConstants
 
 import nl.surfnet.nsiv2._
 import nl.surfnet.nsiv2.messages._
-import nl.surfnet.nsiv2.utils._
 
 import org.w3c.dom.Document
 import play.api.Logger
 import play.api.http.{ContentTypeOf, Writeable}
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.mvc.BodyParsers.parse
 import play.api.mvc._
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
 import soap.NsiSoapConversions._
 
-object ExtraBodyParsers {
+class ExtraBodyParsers(implicit ec: ExecutionContext, bodyParsers: PlayBodyParsers, actionBuilder: ActionBuilder[Request, AnyContent]) {
 
   type NsiRequesterAction = NsiRequesterMessage[NsiRequesterOperation] => Future[NsiRequesterMessage[NsiAcknowledgement]]
   type NsiProviderAction = NsiProviderMessage[NsiProviderOperation] => Future[NsiProviderMessage[NsiAcknowledgement]]
@@ -84,20 +81,20 @@ object ExtraBodyParsers {
     }
   }
 
-  def NsiEndPoint[M <: NsiOperation, T[_ <: NsiOperation] <: NsiMessage[_]](parser: BodyParser[T[M]])(action: T[M] => Future[T[NsiAcknowledgement]])(implicit conversion: Conversion[T[NsiAcknowledgement], Document]) = Action.async(parser) { request =>
+  def NsiEndPoint[M <: NsiOperation, T[_ <: NsiOperation] <: NsiMessage[_]](parser: BodyParser[T[M]])(action: T[M] => Future[T[NsiAcknowledgement]])(implicit conversion: Conversion[T[NsiAcknowledgement], Document]) = actionBuilder.async(parser) { request =>
     action(request.body).map { ack =>
       Logger.debug(s"Ack ${request.remoteAddress} with ${Conversion[T[NsiAcknowledgement], String].apply(ack)}")
       ack
     }.map(Results.Ok(_))
   }
 
-  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = parse.when(
+  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = bodyParsers.DefaultMaxTextLength): BodyParser[T] = bodyParsers.when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
     parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
   def tolerantSoap[T](parser: Conversion[T, ByteString], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
-    val xmlParser = BodyParsers.parse.byteString(maxLength)
+    val xmlParser = bodyParsers.byteString(maxLength)
       .map { bytes =>
         Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${bytes.utf8String}")
         val parsed = parser.invert.apply(bytes)

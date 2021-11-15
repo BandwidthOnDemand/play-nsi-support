@@ -63,7 +63,7 @@ case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: Connecti
   def map[B](f: T => B) = copy(message = f(message))
 }
 
-class MessageStore[M] @Inject() (database: Database)(implicit app: play.api.Application, conversion: Conversion[M, MessageData]) {
+class MessageStore[M] @Inject() (database: Database)(implicit conversion: Conversion[M, MessageData]) {
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = database.withTransaction { implicit connection =>
     SQL"""
         INSERT INTO connections (connection_id,   created_at,                  requester_nsa)
@@ -130,7 +130,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit app: play.api.Appl
            SET deleted_at = ${deletedAt.toSqlTimestamp}
          WHERE connection_id = ${connectionId} AND deleted_at IS NULL
        """
-      .executeUpdate().tap(n => Logger.debug(s"Deleted connection $connectionId"))
+      .executeUpdate().tap(_ => Logger.debug(s"Deleted connection $connectionId"))
     ()
   }
 

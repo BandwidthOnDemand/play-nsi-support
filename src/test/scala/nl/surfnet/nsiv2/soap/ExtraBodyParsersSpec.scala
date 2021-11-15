@@ -19,22 +19,28 @@ class ExtraBodyParsersSpec extends mutable.Specification
     with play.api.test.DefaultAwaitTimeout
     with play.api.test.FutureAwaits {
 
-  import ExtraBodyParsers._
+  class Fixture extends WithApplication() {
+    implicit lazy val executionContext = app.actorSystem.dispatcher
+    lazy val controllerComponents = stubControllerComponents()
+    implicit lazy val actionBuilder = controllerComponents.actionBuilder
+    implicit lazy val bodyParsers = stubPlayBodyParsers
+    lazy val extraBodyParsers = new ExtraBodyParsers
 
-  private def run[A, B](future: Future[Either[A, B]]): Either[Future[A], B] =
-    await(future).fold(a => Left(Future.successful(a)), b => Right(b))
+    def run[A, B](future: Future[Either[A, B]]): Either[Future[A], B] =
+      await(future).fold(a => Left(Future.successful(a)), b => Right(b))
+  }
 
   "SoapBodyParser" should {
 
-    "give UnsupportedMediaType when wrong content-type is set" in new WithApplication() {
+    "give UnsupportedMediaType when wrong content-type is set" in new Fixture {
       val request = FakeRequest().withHeaders(CONTENT_TYPE -> "text/html")
-      val result = run(soap(NsiXmlDocumentConversion).apply(request).run)
+      val result = run(extraBodyParsers.soap(NsiXmlDocumentConversion).apply(request).run)
 
       result must beLeft.like { case result => status(result) must beEqualTo(415) }
     }
 
-    "give InternalServerError with a SOAP fault when the soap message is not valid" in new WithApplication() {
-      val result = run(soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(Source(List(ByteString("<nonSoap></nonSoap>")))))
+    "give InternalServerError with a SOAP fault when the soap message is not valid" in new Fixture {
+      val result = run(extraBodyParsers.soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(Source(List(ByteString("<nonSoap></nonSoap>")))))
 
       result must beLeft.like { case result =>
         status(result) must beEqualTo(500)
@@ -43,14 +49,14 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give EntityTooLarge when the input is to large" in new WithApplication() {
-      val result = run(soap(NsiXmlDocumentConversion, 10).apply(FakeSoapRequest()).run(Source(List(ByteString("<test></test>")))))
+    "give EntityTooLarge when the input is to large" in new Fixture {
+      val result = run(extraBodyParsers.soap(NsiXmlDocumentConversion, 10).apply(FakeSoapRequest()).run(Source(List(ByteString("<test></test>")))))
 
       result must beLeft.like { case result => status(result) must beEqualTo(413) }
     }
 
-    "give a SOAP message for a valid request" in new WithApplication() {
-      val result = run(soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
+    "give a SOAP message for a valid request" in new Fixture {
+      val result = run(extraBodyParsers.soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
 
       result must beRight
     }
@@ -58,20 +64,20 @@ class ExtraBodyParsersSpec extends mutable.Specification
 
   "NsiProviderParser" should {
 
-    "give NSI Initial Reserve for a valid reserve request" in new WithApplication() {
-      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
+    "give NSI Initial Reserve for a valid reserve request" in new Fixture {
+      val result = run(extraBodyParsers.nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
 
       result must beRight.like { case NsiProviderMessage(_, _: InitialReserve) => ok }
     }
 
-    "give NSI Modify Reserve for a valid reserve request" in new WithApplication() {
-      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_modify.xml").toPath)))
+    "give NSI Modify Reserve for a valid reserve request" in new Fixture {
+      val result = run(extraBodyParsers.nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_modify.xml").toPath)))
 
       result must beRight.like { case NsiProviderMessage(_, _: ModifyReserve) => ok }
     }
 
-    "give InternalServerError when NSI Reserve contains extra xml" in new WithApplication() {
-      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_additional_xml.xml").toPath)))
+    "give InternalServerError when NSI Reserve contains extra xml" in new Fixture {
+      val result = run(extraBodyParsers.nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_additional_xml.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -81,8 +87,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give InternalServerError when the NSI headers are missing" in new WithApplication() {
-      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_without_headers.xml").toPath)))
+    "give InternalServerError when the NSI headers are missing" in new Fixture {
+      val result = run(extraBodyParsers.nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_without_headers.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -92,8 +98,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give InternalServerError when there are multiple NSI headers" in new WithApplication() {
-      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_with_duplicate_headers.xml").toPath)))
+    "give InternalServerError when there are multiple NSI headers" in new Fixture {
+      val result = run(extraBodyParsers.nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_with_duplicate_headers.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -105,8 +111,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
   }
 
   "NsiRequesterParser" should {
-    "give NSI Reserve Commit for a valid reserve confirmed request" in new WithApplication() {
-      val result = run(nsiRequesterOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserveconfirmed.xml").toPath)))
+    "give NSI Reserve Commit for a valid reserve confirmed request" in new Fixture {
+      val result = run(extraBodyParsers.nsiRequesterOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserveconfirmed.xml").toPath)))
 
       result must beRight.like { case NsiRequesterMessage(_, _: ReserveConfirmed) => ok }
     }

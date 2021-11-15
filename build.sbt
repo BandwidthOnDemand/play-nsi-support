@@ -6,14 +6,14 @@ scalaVersion := "2.11.12"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args", "-target:jvm-1.8")
 
-publishArtifact in Test := true
+Test / publishArtifact := true
 
 // Disable ScalaDoc generation
-sources in (Compile, doc) := Seq.empty
-publishArtifact in (Compile, packageDoc) := false
+Compile / doc / sources := Seq.empty
+Compile / packageDoc / publishArtifact := false
 
-sources in (Test, doc) := Seq.empty
-publishArtifact in (Test, packageDoc) := false
+Test / doc / sources := Seq.empty
+Test / packageDoc / publishArtifact := false
 
 val playVersion = "2.3.10"
 
@@ -40,11 +40,11 @@ resolvers += Resolver.typesafeRepo("releases")
 
 resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
 
-scalacOptions in Test ++= Seq("-Yrangepos")
+Test / scalacOptions ++= Seq("-Yrangepos")
 
 publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
 
-testFrameworks in Test := Seq(TestFrameworks.Specs2)
+Test / testFrameworks := Seq(TestFrameworks.Specs2)
 
 //releaseSettings
 

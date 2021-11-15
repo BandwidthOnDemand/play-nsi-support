@@ -308,7 +308,7 @@ class NsiSoapConversionsSpec extends mutable.Specification {
         case NsiProviderMessage(headers: NsiHeaders, _) =>
           headers.any.elements must haveSize(1)
           headers.any.elements(0) must beAnInstanceOf[JAXBElement[_]]
-          headers.any.elements(0).asInstanceOf[JAXBElement[_]].getValue must beAnInstanceOf[ConnectionTraceType]
+          headers.any.elements(0).asInstanceOf[JAXBElement[AnyRef]].getValue must beAnInstanceOf[ConnectionTraceType]
           headers.any.elements(0).asInstanceOf[JAXBElement[ConnectionTraceType]].getValue.getConnection.asScala must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
       }
 

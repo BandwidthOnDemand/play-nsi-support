@@ -91,7 +91,7 @@ object ExtraBodyParsers {
     }.map(Results.Ok(_))
   }
 
-  def soap[T](parser: Conversion[T, Array[Byte]], maxLength: Int = BodyParsers.parse.DEFAULT_MAX_TEXT_LENGTH): BodyParser[T] = when(
+  def soap[T](parser: Conversion[T, Array[Byte]], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
     parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))

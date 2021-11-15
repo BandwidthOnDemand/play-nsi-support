@@ -27,7 +27,6 @@ import play.api.http.ContentTypes
 import play.api.mvc._
 import play.api.mvc.Results._
 import scala.util.Try
-import scalax.io.Resource
 import scala.concurrent.Future
 
 trait SoapWebService {
@@ -63,8 +62,9 @@ trait SoapWebService {
     }
   }
 
-  private def readClasspathResource(resource: String): Option[String] =
-    Try(Resource.fromClasspath(resource).string(scalax.io.Codec.UTF8)).toOption
+  private def readClasspathResource(resource: String): Option[String] = Try {
+    scala.io.Source.fromResource(resource).mkString
+  }.toOption
 
   private def readClasspathWsdl(name: String): Option[String] = {
     val resolved = Try(URI.create(WsdlPath).resolve(name).toString).toOption

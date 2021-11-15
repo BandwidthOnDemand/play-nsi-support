@@ -2,7 +2,7 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.15"
 
 scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args", "-target:jvm-1.8")
 
@@ -26,7 +26,7 @@ libraryDependencies ++= Seq(
   "org.playframework.anorm" %% "anorm" % "2.6.10",
   "com.typesafe.play" %% "play-test" % playVersion % "test",
   "com.typesafe.play" %% "play-specs2" % playVersion % "test",
-  "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
+  //"com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
   "com.google.code.findbugs" % "jsr305" % "3.0.0", // for javax.annotation.Nullable
   "org.specs2" %% "specs2-scalacheck" % "3.8.9" % "test"
 )

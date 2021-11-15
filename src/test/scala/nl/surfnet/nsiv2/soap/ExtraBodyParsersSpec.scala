@@ -2,17 +2,17 @@ package nl.surfnet.nsiv2.soap
 
 import org.specs2._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import play.api.mvc._
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.test._
 import play.api.test.Helpers._
-import play.api.libs.iteratee._
 import javax.xml.soap._
 import java.io.File
 import nl.surfnet.nsiv2.messages._
 import NsiSoapConversions.NsiXmlDocumentConversion
+import akka.stream._, scaladsl._
+import akka.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class ExtraBodyParsersSpec extends mutable.Specification
@@ -26,15 +26,15 @@ class ExtraBodyParsersSpec extends mutable.Specification
 
   "SoapBodyParser" should {
 
-    "give UnsupportedMediaType when wrong content-type is set" in {
+    "give UnsupportedMediaType when wrong content-type is set" in new WithApplication() {
       val request = FakeRequest().withHeaders(CONTENT_TYPE -> "text/html")
       val result = run(soap(NsiXmlDocumentConversion).apply(request).run)
 
       result must beLeft.like { case result => status(result) must beEqualTo(415) }
     }
 
-    "give InternalServerError with a SOAP fault when the soap message is not valid" in {
-      val result = run(Enumerator("<nonSoap></nonSoap>".getBytes) |>>> soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()))
+    "give InternalServerError with a SOAP fault when the soap message is not valid" in new WithApplication() {
+      val result = run(soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(Source(List(ByteString("<nonSoap></nonSoap>")))))
 
       result must beLeft.like { case result =>
         status(result) must beEqualTo(500)
@@ -43,14 +43,14 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give EntityTooLarge when the input is to large" in {
-      val result = run(Enumerator("<test></test>".getBytes) |>>> soap(NsiXmlDocumentConversion, 10).apply(FakeSoapRequest()))
+    "give EntityTooLarge when the input is to large" in new WithApplication() {
+      val result = run(soap(NsiXmlDocumentConversion, 10).apply(FakeSoapRequest()).run(Source(List(ByteString("<test></test>")))))
 
       result must beLeft.like { case result => status(result) must beEqualTo(413) }
     }
 
-    "give a SOAP message for a valid request" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve.xml")) |>>> soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()))
+    "give a SOAP message for a valid request" in new WithApplication() {
+      val result = run(soap(NsiXmlDocumentConversion).apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
 
       result must beRight
     }
@@ -58,20 +58,20 @@ class ExtraBodyParsersSpec extends mutable.Specification
 
   "NsiProviderParser" should {
 
-    "give NSI Initial Reserve for a valid reserve request" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+    "give NSI Initial Reserve for a valid reserve request" in new WithApplication() {
+      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve.xml").toPath)))
 
       result must beRight.like { case NsiProviderMessage(_, _: InitialReserve) => ok }
     }
 
-    "give NSI Modify Reserve for a valid reserve request" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve_modify.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+    "give NSI Modify Reserve for a valid reserve request" in new WithApplication() {
+      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_modify.xml").toPath)))
 
       result must beRight.like { case NsiProviderMessage(_, _: ModifyReserve) => ok }
     }
 
-    "give InternalServerError when NSI Reserve contains extra xml" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve_additional_xml.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+    "give InternalServerError when NSI Reserve contains extra xml" in new WithApplication() {
+      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_additional_xml.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -81,8 +81,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give InternalServerError when the NSI headers are missing" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve_without_headers.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+    "give InternalServerError when the NSI headers are missing" in new WithApplication() {
+      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_without_headers.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -92,8 +92,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
       }
     }
 
-    "give InternalServerError when there are multiple NSI headers" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserve_with_duplicate_headers.xml")) |>>> nsiProviderOperation.apply(FakeSoapRequest()))
+    "give InternalServerError when there are multiple NSI headers" in new WithApplication() {
+      val result = run(nsiProviderOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserve_with_duplicate_headers.xml").toPath)))
 
       result must beLeft.like {
         case result =>
@@ -105,8 +105,8 @@ class ExtraBodyParsersSpec extends mutable.Specification
   }
 
   "NsiRequesterParser" should {
-    "give NSI Reserve Commit for a valid reserve confirmed request" in {
-      val result = run(Enumerator.fromFile(new File("src/test/resources/reserveconfirmed.xml")) |>>> nsiRequesterOperation.apply(FakeSoapRequest()))
+    "give NSI Reserve Commit for a valid reserve confirmed request" in new WithApplication() {
+      val result = run(nsiRequesterOperation.apply(FakeSoapRequest()).run(FileIO.fromPath(new File("src/test/resources/reserveconfirmed.xml").toPath)))
 
       result must beRight.like { case NsiRequesterMessage(_, _: ReserveConfirmed) => ok }
     }

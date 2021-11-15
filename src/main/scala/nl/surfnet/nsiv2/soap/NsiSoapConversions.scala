@@ -22,6 +22,7 @@
  */
 package nl.surfnet.nsiv2.soap
 
+import akka.util.ByteString
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.URI
 import javax.xml.XMLConstants
@@ -52,10 +53,10 @@ import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
 
 object NsiSoapConversions {
-  implicit val ByteArrayToString = Conversion.build[Array[Byte], String] { bytes =>
-    Try(new String(bytes, "UTF-8"))
+  implicit val ByteArrayToString = Conversion.build[ByteString, String] { bytes =>
+    Try(bytes.utf8String)
   } { string =>
-    Try(string.getBytes("UTF-8"))
+    Try(ByteString(string, "UTF-8"))
   }
 
   val NsiXmlDocumentConversion = XmlDocumentConversion(new nl.surfnet.bod.nsi.Validation(nl.surfnet.bod.nsi.Validation.NSI_SCHEMAS).getSchema())
@@ -333,13 +334,13 @@ object NsiSoapConversions {
   private val NsiHeadersQName = headersFactory.createNsiHeader(null).getName()
   private val NsiConnectionTypesNamespace = typesFactory.createAcknowledgment(null).getName().getNamespaceURI()
 
-  private def XmlDocumentConversion(schema: Schema): Conversion[Document, Array[Byte]] = {
+  private def XmlDocumentConversion(schema: Schema): Conversion[Document, ByteString] = {
     val errorHandler = new DefaultHandler() {
       override def error(e: SAXParseException) = throw e
       override def fatalError(e: SAXParseException) = throw e
     }
 
-    Conversion.build[Document, Array[Byte]] { document =>
+    Conversion.build[Document, ByteString] { document =>
       Try {
         val domSource = new DOMSource(document)
 
@@ -351,7 +352,7 @@ object NsiSoapConversions {
 
         val baos = new ByteArrayOutputStream()
         transformer.transform(domSource, new StreamResult(baos))
-        baos.toByteArray()
+        ByteString(baos.toByteArray())
       }
     } { bytes =>
       Try {
@@ -364,7 +365,7 @@ object NsiSoapConversions {
 
         val db = dbf.newDocumentBuilder()
         db.setErrorHandler(errorHandler)
-        db.parse(new ByteArrayInputStream(bytes))
+        db.parse(new ByteArrayInputStream(bytes.toArray))
       }
     }
   }

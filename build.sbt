@@ -15,7 +15,7 @@ Compile / packageDoc / publishArtifact := false
 Test / doc / sources := Seq.empty
 Test / packageDoc / publishArtifact := false
 
-val playVersion = "2.4.11"
+val playVersion = "2.5.19"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "2.1.4",

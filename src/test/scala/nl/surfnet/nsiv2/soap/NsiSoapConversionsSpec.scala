@@ -11,6 +11,7 @@ import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import scala.collection.JavaConverters._
 import scala.util.Failure
 import scala.util.Success
+import akka.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class NsiSoapConversionsSpec extends mutable.Specification {
@@ -361,11 +362,11 @@ class NsiSoapConversionsSpec extends mutable.Specification {
           </soapenv:Body>
         </soapenv:Envelope>.toString
 
-      val Success(dom) = NsiXmlDocumentConversion.invert(input.getBytes("UTF-8"))
+      val Success(dom) = NsiXmlDocumentConversion.invert(ByteString(input))
       dom.getDocumentElement().getLocalName() must beEqualTo("Envelope")
 
       val Success(output) = NsiXmlDocumentConversion(dom)
-      new String(output, "UTF-8") must contain("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436")
+      output.utf8String must contain("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436")
     }
   }
 
@@ -415,7 +416,7 @@ class NsiSoapConversionsSpec extends mutable.Specification {
 </soap:Envelope>.toString
 
         val converter = NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(NsiXmlDocumentConversion)
-        val Success(doc) = converter.invert(input.getBytes("UTF-8"))
+        val Success(doc) = converter.invert(ByteString(input))
         val Success(arr) = converter(doc)
 
         converter.invert(arr) must beSuccessfulTry

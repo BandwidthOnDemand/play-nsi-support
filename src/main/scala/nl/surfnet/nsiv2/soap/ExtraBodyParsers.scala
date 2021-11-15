@@ -22,6 +22,8 @@
  */
 package nl.surfnet.nsiv2.soap
 
+import akka.util.ByteString
+
 import javax.xml.soap.SOAPConstants
 
 import nl.surfnet.nsiv2._
@@ -34,6 +36,7 @@ import play.api.http.{ContentTypeOf, Writeable}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.iteratee.Input.Empty
 import play.api.libs.iteratee._
+import play.api.libs.streams._
 import play.api.mvc.BodyParsers.parse.when
 import play.api.mvc._
 
@@ -91,16 +94,16 @@ object ExtraBodyParsers {
     }.map(Results.Ok(_))
   }
 
-  def soap[T](parser: Conversion[T, Array[Byte]], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = when(
+  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
     parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
-  def tolerantSoap[T](parser: Conversion[T, Array[Byte]], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
-    Traversable.takeUpTo[Array[Byte]](maxLength)
+  def tolerantSoap[T](parser: Conversion[T, ByteString], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
+    Streams.iterateeToAccumulator(Traversable.takeUpTo[ByteString](maxLength)
       .apply(
-        Iteratee.consume[Array[Byte]]().map { bytes =>
-          Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${new String(bytes, "UTF-8")}")
+        Iteratee.consume[ByteString]().map { bytes =>
+          Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${bytes.utf8String}")
           bytes
         }.map { bytes =>
           parser.invert.apply(bytes)
@@ -127,31 +130,39 @@ object ExtraBodyParsers {
             case Success(xml) =>
               Done(Right(xml), Empty)
           }
-      }
+      })
   }
 
   private[soap] def nsiProviderOperation = nsiBodyParser(NsiProviderMessageToDocument[NsiProviderOperation](None))
 
   private[soap] def nsiRequesterOperation = nsiBodyParser(NsiRequesterMessageToDocument[NsiRequesterOperation](None))
 
-  private def nsiBodyParser[T <: NsiMessage[_]](implicit conversion: Conversion[T, Document]): BodyParser[T] = soap(NsiXmlDocumentConversion).flatMap { soapMessage =>
-    BodyParser { requestHeader =>
-      val parsedMessage = conversion.invert(soapMessage)
+  private def nsiBodyParser[T <: NsiMessage[_]](implicit conversion: Conversion[T, Document]): BodyParser[T] = BodyParser { requestHeader =>
+    soap(NsiXmlDocumentConversion)(requestHeader).map {
+      case Left(result) =>
+        Left(result)
+      case Right(soapMessage) =>
+        val parsedMessage = conversion.invert(soapMessage)
 
-      Logger.debug(s"Received (${requestHeader.uri}): $parsedMessage")
+        Logger.debug(s"Received (${requestHeader.uri}): $parsedMessage")
 
-      Done(parsedMessage.toEither.left.map { error =>
-        Logger.warn(s"Failed to parse $soapMessage with $error on ${requestHeader.uri}", error)
-        Results.InternalServerError(
-          <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
-            <S:Body>
-              <S:Fault>
-                <faultcode>S:Client</faultcode>
-                <faultstring>Error parsing NSI message in SOAP request: { error }</faultstring>
-              </S:Fault>
-            </S:Body>
-          </S:Envelope>).as(SOAPConstants.SOAP_1_1_CONTENT_TYPE)
-      })
+        parsedMessage match {
+          case Failure(error) =>
+            Logger.warn(s"Failed to parse $soapMessage with $error on ${requestHeader.uri}", error)
+            Left(Results.InternalServerError(
+              <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+                <S:Body>
+                  <S:Fault>
+                    <faultcode>S:Client</faultcode>
+                    <faultstring>Error parsing NSI message in SOAP request: { error }</faultstring>
+                  </S:Fault>
+                </S:Body>
+              </S:Envelope>
+            ).as(SOAPConstants.SOAP_1_1_CONTENT_TYPE))
+
+          case Success(body) =>
+            Right(body)
+        }
     }
   }
 }

@@ -28,6 +28,7 @@ import anorm.SqlParser._
 import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
+import javax.inject.Inject
 import nl.surfnet.nsiv2.messages._
 import nl.surfnet.nsiv2.soap._
 import nl.surfnet.nsiv2.soap.NsiSoapConversions._
@@ -35,7 +36,7 @@ import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import play.api.Logger
 import play.api.data.validation.ValidationError
-import play.api.db.DB
+import play.api.db.Database
 import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
 
@@ -63,8 +64,8 @@ case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: Connecti
   def map[B](f: T => B) = copy(message = f(message))
 }
 
-class MessageStore[M](databaseName: String)(implicit app: play.api.Application, conversion: Conversion[M, MessageData]) {
-  def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = DB.withTransaction(databaseName) { implicit connection =>
+class MessageStore[M] @Inject() (database: Database)(implicit app: play.api.Application, conversion: Conversion[M, MessageData]) {
+  def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = database.withTransaction { implicit connection =>
     SQL"""
         INSERT INTO connections (connection_id,   created_at,                  requester_nsa)
              VALUES             (${connectionId}, ${createdAt.toSqlTimestamp}, ${requesterNsa})
@@ -73,7 +74,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     ()
   }
 
-  def storeInboundWithOutboundMessages(connectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = DB.withTransaction(databaseName) { implicit connection =>
+  def storeInboundWithOutboundMessages(connectionId: ConnectionId, createdAt: Instant, inbound: M, outbound: Seq[M]) = database.withTransaction { implicit connection =>
     val connectionPk = SQL"""SELECT id FROM connections WHERE connection_id = ${connectionId} AND deleted_at IS NULL"""
       .as(get[Long]("id").singleOpt)
       .getOrElse {
@@ -83,7 +84,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
     outbound.foreach(store(connectionPk, createdAt, _, Some(inboundId)))
   }
 
-  def findByConnectionId(connectionId: ConnectionId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
+  def findByConnectionId(connectionId: ConnectionId): Seq[MessageRecord[M]] = database.withConnection { implicit connection =>
     SQL"""
         SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
@@ -94,7 +95,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
       .map(_.map(message => conversion.invert(message).get)) // FIXME error handling
   }
 
-  def findByCorrelationId(requesterNsa: String, correlationId: CorrelationId): Seq[MessageRecord[M]] = DB.withConnection(databaseName) { implicit connection =>
+  def findByCorrelationId(requesterNsa: String, correlationId: CorrelationId): Seq[MessageRecord[M]] = database.withConnection { implicit connection =>
     SQL"""
         SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
@@ -106,7 +107,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
       .map(_.map(message => conversion.invert(message).get)) // FIXME error handling
   }
 
-  def loadEverything(): Seq[(ConnectionId, Seq[MessageRecord[M]])] = DB.withConnection(databaseName) { implicit connection =>
+  def loadEverything(): Seq[(ConnectionId, Seq[MessageRecord[M]])] = database.withConnection { implicit connection =>
     SQL"""
         SELECT m.id, c.connection_id, m.created_at, m.correlation_id, m.type, m.content
           FROM messages m INNER JOIN connections c ON m.connection_id = c.id
@@ -124,7 +125,7 @@ class MessageStore[M](databaseName: String)(implicit app: play.api.Application, 
       }(collection.breakOut)
   }
 
-  def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = DB.withTransaction(databaseName) { implicit connection =>
+  def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = database.withTransaction { implicit connection =>
     SQL"""
         UPDATE connections
            SET deleted_at = ${deletedAt.toSqlTimestamp}

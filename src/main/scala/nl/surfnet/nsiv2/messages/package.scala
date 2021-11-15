@@ -32,7 +32,6 @@ import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteria
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
-import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scala.collection.JavaConverters._
@@ -61,9 +60,9 @@ package object messages {
     override def reads(json: JsValue): JsResult[T] = json match {
       case JsString(s) => parse(s) match {
         case Some(t) => JsSuccess(t)
-        case None    => JsError(Seq(JsPath() -> Seq(ValidationError(message, s))))
+        case None    => JsError(Seq(JsPath() -> Seq(JsonValidationError(message, s))))
       }
-      case _ => JsError(Seq(JsPath() -> Seq(ValidationError("error.expected.jsstring"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("error.expected.jsstring"))))
     }
     override def writes(t: T): JsValue = JsString(print(t))
   }

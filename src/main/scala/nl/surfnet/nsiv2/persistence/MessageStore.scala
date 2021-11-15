@@ -35,7 +35,6 @@ import nl.surfnet.nsiv2.soap.NsiSoapConversions._
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import play.api.Logger
-import play.api.data.validation.ValidationError
 import play.api.db.Database
 import play.api.libs.json._
 import scala.util.{ Try, Success, Failure }
@@ -44,7 +43,7 @@ case class MessageData(correlationId: Option[CorrelationId], tpe: String, conten
 object MessageData {
   def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Format[A] = new Format[A] {
     override def reads(js: JsValue): JsResult[A] = Json.fromJson[B](js).flatMap { b =>
-      conversion.invert(b).toEither.fold(error => JsError(ValidationError("error.conversion.failed", error)), JsSuccess(_))
+      conversion.invert(b).toEither.fold(error => JsError(JsonValidationError("error.conversion.failed", error)), JsSuccess(_))
     }
     override def writes(a: A): JsValue = Json.toJson(conversion(a).get)
   }

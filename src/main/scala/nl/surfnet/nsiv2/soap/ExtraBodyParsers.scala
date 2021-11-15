@@ -34,10 +34,7 @@ import org.w3c.dom.Document
 import play.api.Logger
 import play.api.http.{ContentTypeOf, Writeable}
 import play.api.libs.concurrent.Execution.Implicits._
-import play.api.libs.iteratee.Input.Empty
-import play.api.libs.iteratee._
-import play.api.libs.streams._
-import play.api.mvc.BodyParsers.parse.when
+import play.api.mvc.BodyParsers.parse
 import play.api.mvc._
 
 import scala.concurrent.Future
@@ -94,43 +91,35 @@ object ExtraBodyParsers {
     }.map(Results.Ok(_))
   }
 
-  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = when(
+  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = BodyParsers.parse.DefaultMaxTextLength): BodyParser[T] = parse.when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
     parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
   def tolerantSoap[T](parser: Conversion[T, ByteString], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
-    Streams.iterateeToAccumulator(Traversable.takeUpTo[ByteString](maxLength)
-      .apply(
-        Iteratee.consume[ByteString]().map { bytes =>
-          Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${bytes.utf8String}")
-          bytes
-        }.map { bytes =>
-          parser.invert.apply(bytes)
-        }.map { parsed =>
-          Logger.debug(s"SOAP message parse result ${parsed}")
-          parsed
-        }).flatMap(Iteratee.eofOrElse(Results.EntityTooLarge))
-      .flatMap {
-        case Left(b) =>
-          Done(Left(b), Empty)
-        case Right(it) =>
-          it.flatMap {
-            case Failure(error) =>
-              Logger.warn(s"SOAP parsing failed ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType}: $error")
-              Done(Left(Results.InternalServerError(
-                <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
-                  <S:Body>
-                    <S:Fault>
-                      <faultcode>S:Client</faultcode>
-                      <faultstring>Error parsing SOAP request: { error }</faultstring>
-                    </S:Fault>
-                  </S:Body>
-                </S:Envelope>).as(SOAPConstants.SOAP_1_1_CONTENT_TYPE)), Empty)
-            case Success(xml) =>
-              Done(Right(xml), Empty)
-          }
-      })
+    val xmlParser = BodyParsers.parse.byteString(maxLength)
+      .map { bytes =>
+        Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${bytes.utf8String}")
+        val parsed = parser.invert.apply(bytes)
+        Logger.debug(s"SOAP message parse result ${parsed}")
+        parsed
+      }.validate {
+        case Failure(error) =>
+          Logger.warn(s"SOAP parsing failed ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType}: $error")
+          Left(Results.InternalServerError(
+            <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+              <S:Body>
+                <S:Fault>
+                  <faultcode>S:Client</faultcode>
+                  <faultstring>Error parsing SOAP request: { error }</faultstring>
+                </S:Fault>
+              </S:Body>
+              </S:Envelope>
+          ).as(SOAPConstants.SOAP_1_1_CONTENT_TYPE))
+        case Success(t) =>
+          Right(t)
+      }
+    xmlParser(request)
   }
 
   private[soap] def nsiProviderOperation = nsiBodyParser(NsiProviderMessageToDocument[NsiProviderOperation](None))

@@ -8,3 +8,5 @@
 /logs/
 /.tmpBin/
 /bin/
+/.bsp/
+/.metals/

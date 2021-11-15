@@ -46,8 +46,6 @@ publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetRel
 
 Test / testFrameworks := Seq(TestFrameworks.Specs2)
 
-//releaseSettings
-
 //net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 lazy val licenseText = settingKey[String]("Project license text.")

@@ -2,9 +2,9 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
-scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args")
+scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args", "-target:jvm-1.8")
 
 publishArtifact in Test := true
 
@@ -34,11 +34,11 @@ val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
 val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
 val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
 val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
-val scalazReleases = "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+// val scalazReleases = "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
 resolvers += Resolver.typesafeRepo("releases")
 
-resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases, scalazReleases )
+resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
 
 scalacOptions in Test ++= Seq("-Yrangepos")
 
@@ -46,20 +46,20 @@ publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetRel
 
 testFrameworks in Test := Seq(TestFrameworks.Specs2)
 
-releaseSettings
+//releaseSettings
 
-net.virtualvoid.sbt.graph.Plugin.graphSettings
+//net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 lazy val licenseText = settingKey[String]("Project license text.")
 
 licenseText := IO.read(baseDirectory.value / "LICENSE")
 
-headers := Map(
-  "scala" -> (
-    HeaderPattern.cStyleBlockComment,
-    licenseText.value.split("\n").map {
-      case ""   => " *"
-      case line => " * " ++ line
-    }.mkString("/*\n", "\n", "\n */\n")
-  )
-)
+// headers := Map(
+//   "scala" -> (
+//     HeaderPattern.cStyleBlockComment,
+//     licenseText.value.split("\n").map {
+//       case ""   => " *"
+//       case line => " * " ++ line
+//     }.mkString("/*\n", "\n", "\n */\n")
+//   )
+// )

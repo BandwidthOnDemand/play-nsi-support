@@ -15,20 +15,19 @@ Compile / packageDoc / publishArtifact := false
 Test / doc / sources := Seq.empty
 Test / packageDoc / publishArtifact := false
 
-val playVersion = "2.6.25"
+val playVersion = "2.7.9"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "2.1.4",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-jdbc" % playVersion,
-  "com.typesafe.play" %% "play-json" % "2.6.14",
+  "com.typesafe.play" %% "play-json" % "2.7.4",
   "org.playframework.anorm" %% "anorm" % "2.6.10",
   "com.typesafe.play" %% "play-test" % playVersion % "test",
   "com.typesafe.play" %% "play-specs2" % playVersion % "test",
   //"com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
-  "com.google.code.findbugs" % "jsr305" % "3.0.0", // for javax.annotation.Nullable
-  "org.specs2" %% "specs2-scalacheck" % "3.8.9" % "test"
+  "org.specs2" %% "specs2-scalacheck" % "4.3.5" % "test"
 )
 
 val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"

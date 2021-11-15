@@ -88,12 +88,12 @@ class ExtraBodyParsers(implicit ec: ExecutionContext, bodyParsers: PlayBodyParse
     }.map(Results.Ok(_))
   }
 
-  def soap[T](parser: Conversion[T, ByteString], maxLength: Int = bodyParsers.DefaultMaxTextLength): BodyParser[T] = bodyParsers.when(
+  def soap[T](parser: Conversion[T, ByteString], maxLength: Long = bodyParsers.DefaultMaxTextLength): BodyParser[T] = bodyParsers.when(
     predicate = _.contentType.exists(_ == SOAPConstants.SOAP_1_1_CONTENT_TYPE),
     parser = tolerantSoap(parser, maxLength),
     badResult = _ => Future.successful(Results.UnsupportedMediaType("Expecting Content-Type " + SOAPConstants.SOAP_1_1_CONTENT_TYPE)))
 
-  def tolerantSoap[T](parser: Conversion[T, ByteString], maxLength: Int): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
+  def tolerantSoap[T](parser: Conversion[T, ByteString], maxLength: Long): BodyParser[T] = BodyParser("SOAP, maxLength=" + maxLength) { request =>
     val xmlParser = bodyParsers.byteString(maxLength)
       .map { bytes =>
         Logger.debug(s"received SOAP message ${request.uri} from ${request.remoteAddress} with content-type ${request.contentType} ${bytes.utf8String}")

@@ -2,9 +2,9 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.12.15"
+scalaVersion := "2.13.7"
 
-scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-unused-import", "-Ywarn-value-discard", "-Ywarn-adapted-args", "-target:jvm-1.8")
+scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-value-discard", "-target:jvm-1.8")
 
 Test / publishArtifact := true
 
@@ -19,7 +19,7 @@ val playVersion = "2.7.9"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "2.1.4",
-  "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+  "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-jdbc" % playVersion,
   "com.typesafe.play" %% "play-json" % "2.7.4",
@@ -27,7 +27,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-test" % playVersion % "test",
   "com.typesafe.play" %% "play-specs2" % playVersion % "test",
   //"com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3-1",
-  "org.specs2" %% "specs2-scalacheck" % "4.3.5" % "test"
+  "org.specs2" %% "specs2-scalacheck" % "4.13.0" % "test"
 )
 
 val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"

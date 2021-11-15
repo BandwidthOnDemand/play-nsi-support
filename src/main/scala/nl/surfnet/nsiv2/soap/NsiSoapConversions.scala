@@ -227,9 +227,9 @@ object NsiSoapConversions {
 
   private def toIds(query: QueryType): Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]] =
     if (!query.getConnectionId().isEmpty())
-      Some(Left(query.getConnectionId().asScala))
+      Some(Left(query.getConnectionId().asScala.toSeq))
     else if (!query.getGlobalReservationId().isEmpty)
-      Some(Right(query.getGlobalReservationId().asScala.map(URI.create)))
+      Some(Right(query.getGlobalReservationId().asScala.toSeq.map(URI.create)))
     else
       None
 

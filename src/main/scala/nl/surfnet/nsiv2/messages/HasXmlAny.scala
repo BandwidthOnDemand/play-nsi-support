@@ -93,7 +93,7 @@ trait HasXmlAny[A] {
 
   def findAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): List[T] = getAny(a).asScala.collect {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
-  }(collection.breakOut)
+  }.toList
 
   def findFirstAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): Option[T] = getAny(a).asScala collectFirst {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value

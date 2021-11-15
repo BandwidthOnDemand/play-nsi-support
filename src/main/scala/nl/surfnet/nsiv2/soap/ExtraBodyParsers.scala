@@ -35,7 +35,6 @@ import play.api.http.{ContentTypeOf, Writeable}
 import play.api.mvc._
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
 import soap.NsiSoapConversions._

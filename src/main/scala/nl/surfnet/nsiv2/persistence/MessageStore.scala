@@ -121,7 +121,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit conversion: Conver
             val deserialized = conversion.invert(record.message).toOption
             deserialized.map(message => record.map(Function.const(message)))
           }
-      }(collection.breakOut)
+      }.toSeq
   }
 
   def delete(connectionId: ConnectionId, deletedAt: Instant): Unit = database.withTransaction { implicit connection =>

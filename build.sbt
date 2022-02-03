@@ -18,7 +18,7 @@ Test / packageDoc / publishArtifact := false
 val playVersion = "2.7.9"
 
 libraryDependencies ++= Seq(
-  "nl.surfnet.bod" % "bod-nsi" % "2.1.4",
+  "nl.surfnet.bod" % "bod-nsi" % "2.1.5",
   "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-jdbc" % playVersion,
@@ -30,19 +30,21 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-scalacheck" % "4.13.0" % "test"
 )
 
-val nexusBaseUri = "https://atlas.dlp.surfnet.nl/nexus/content/repositories"
-val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
-val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
-val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
-// val scalazReleases = "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
+// val githubBodNsi = "https://maven.pkg.github.com/BandwidthOnDemand/bod-nsi"
+// val githubPlayNsiSupport = "BandwidthOnDemand play-nsi-support" at s"https://maven.pkg.github.com/BandwidthOnDemand/play-nsi-support"
+// val surfnetReleases = "SURFnet Releases" at s"$nexusBaseUri/public-releases"
+// val surfnetSnapshots = "SURFnet Snapshots" at s"$nexusBaseUri/public-snapshots"
+// val surfnetThirdParty = "SURFnet thirdparty" at s"$nexusBaseUri/thirdparty"
 
 resolvers += Resolver.typesafeRepo("releases")
 
-resolvers ++= Seq( surfnetThirdParty, surfnetSnapshots, surfnetReleases )
+githubOwner := "BandwidthOnDemand"
+githubRepository := "play-nsi-support"
+resolvers += Resolver.githubPackages("BandwidthOnDemand")
 
 Test / scalacOptions ++= Seq("-Yrangepos")
 
-publishTo := { if (isSnapshot.value) Some(surfnetSnapshots) else Some(surfnetReleases) }
+// publishTo := githubPlayNsiSupport
 
 Test / testFrameworks := Seq(TestFrameworks.Specs2)
 

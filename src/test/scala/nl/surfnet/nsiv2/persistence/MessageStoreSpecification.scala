@@ -6,6 +6,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Shrink
+import play.api.db.Databases
 import play.api.test._
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.soap.Conversion
@@ -28,11 +29,12 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
   implicit def shrinkMessage: Shrink[Message] = Shrink(x => Stream.empty)
 
   class Fixture extends WithApplication() {
+    lazy val database = Databases.inMemory()
     lazy val requesterNsa = "requester_msa"
     lazy val timestamp = Instant.now()
     lazy val aggregatedConnectionId = newConnectionId
     lazy val messageStore = {
-      val s = new MessageStore[Message]("default")
+      val s = new MessageStore[Message](database)
       s.create(aggregatedConnectionId, timestamp, requesterNsa)
       s
     }

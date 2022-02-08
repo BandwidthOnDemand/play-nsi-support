@@ -27,7 +27,6 @@ import play.api.http.ContentTypes
 import play.api.mvc._
 import play.api.mvc.Results._
 import scala.util.Try
-import scalax.io.Resource
 import scala.concurrent.Future
 
 trait SoapWebService {
@@ -38,9 +37,11 @@ trait SoapWebService {
   val WsdlPath: String
   val WsdlBasename: String
 
+  def actionBuilder: DefaultActionBuilder
+
   def serviceUrl: String
 
-  def wsdl = Action.async { implicit request =>
+  def wsdl = actionBuilder.async { implicit request =>
     if (request.getQueryString("wsdl").isDefined || request.getQueryString("WSDL").isDefined)
       wsdlOrXsd(WsdlBasename)(request)
     else
@@ -55,7 +56,7 @@ trait SoapWebService {
       s"""<soap:address location="$serviceUrl" />""")
   }
 
-  private def serveWsdl(path: String)(transform: RequestHeader => String => String) = Action { implicit request =>
+  private def serveWsdl(path: String)(transform: RequestHeader => String => String) = actionBuilder { implicit request =>
     readClasspathWsdl(path).map(transform(request)).map { body =>
       Ok(body).as(ContentTypes.XML)
     }.getOrElse {
@@ -63,8 +64,9 @@ trait SoapWebService {
     }
   }
 
-  private def readClasspathResource(resource: String): Option[String] =
-    Try(Resource.fromClasspath(resource).string(scalax.io.Codec.UTF8)).toOption
+  private def readClasspathResource(resource: String): Option[String] = Try {
+    scala.io.Source.fromResource(resource).mkString
+  }.toOption
 
   private def readClasspathWsdl(name: String): Option[String] = {
     val resolved = Try(URI.create(WsdlPath).resolve(name).toString).toOption

@@ -23,11 +23,11 @@
 package nl.surfnet.nsiv2.soap
 
 import akka.util.ByteString
+import jakarta.xml.bind.JAXBContext
+import jakarta.xml.bind.JAXBElement
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.URI
 import javax.xml.XMLConstants
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.JAXBElement
 import javax.xml.datatype.XMLGregorianCalendar
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory

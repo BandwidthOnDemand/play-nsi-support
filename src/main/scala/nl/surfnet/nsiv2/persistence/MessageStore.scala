@@ -64,6 +64,8 @@ case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: Connecti
 }
 
 class MessageStore[M] @Inject() (database: Database)(implicit conversion: Conversion[M, MessageData]) {
+  private val logger = Logger(classOf[MessageStore[?]])
+
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit = database.withTransaction { implicit connection =>
     SQL"""
         INSERT INTO connections (connection_id,   created_at,                  requester_nsa)
@@ -130,7 +132,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit conversion: Conver
            SET deleted_at = ${deletedAt.toSqlTimestamp}
          WHERE connection_id = ${connectionId} AND deleted_at IS NULL
        """
-      .executeUpdate().tap(_ => Logger.debug(s"Deleted connection $connectionId"))
+      .executeUpdate().tap(_ => logger.debug(s"Deleted connection $connectionId"))
     ()
   }
 

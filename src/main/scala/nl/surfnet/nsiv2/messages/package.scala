@@ -36,7 +36,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import scala.collection.JavaConverters._
 import scala.util.Try
-import javax.xml.bind.JAXBElement
+import jakarta.xml.bind.JAXBElement
 import scala.reflect.ClassTag
 
 package object messages {

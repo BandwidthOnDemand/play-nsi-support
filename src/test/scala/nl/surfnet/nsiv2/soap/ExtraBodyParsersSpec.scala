@@ -7,7 +7,7 @@ import play.api.mvc._
 import play.api.http.HeaderNames.CONTENT_TYPE
 import play.api.test._
 import play.api.test.Helpers._
-import javax.xml.soap._
+import jakarta.xml.soap._
 import java.io.File
 import nl.surfnet.nsiv2.messages._
 import NsiSoapConversions.NsiXmlDocumentConversion

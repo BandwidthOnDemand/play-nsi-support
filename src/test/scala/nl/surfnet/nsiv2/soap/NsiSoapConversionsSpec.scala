@@ -2,7 +2,7 @@ package nl.surfnet.nsiv2.soap
 
 import org.specs2._
 
-import javax.xml.bind.JAXBElement
+import jakarta.xml.bind.JAXBElement
 import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionTraceType, ConnectionType }
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.messages._

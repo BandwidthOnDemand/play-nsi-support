@@ -29,6 +29,7 @@ import play.api.Logger
  * DSL, without the dependencies on actors.
  */
 abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateData: D) extends StateMachine[I, O] {
+  private val logger = Logger(classOf[FiniteStateMachine[?, ?, ?, ?]])
 
   /**
    * Process the given message. Returns `None` if the FSM did not handle the
@@ -40,7 +41,7 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
       _nextStateName = nextState.name
       _nextStateData = nextState.data
       val output = if (_transitionHandler.isDefinedAt((_stateName, _nextStateName))) {
-        Logger.debug(s"state change from ${_stateName} to ${_nextStateName} with defined transition handler")
+        logger.debug(s"state change from ${_stateName} to ${_nextStateName} with defined transition handler")
         _transitionHandler((_stateName, _nextStateName))
       } else {
         Vector.empty

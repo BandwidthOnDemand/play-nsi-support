@@ -22,7 +22,7 @@
  */
 package nl.surfnet.nsiv2.messages
 
-import javax.xml.bind.JAXBElement
+import jakarta.xml.bind.JAXBElement
 import javax.xml.namespace.QName
 import org.ogf.schemas.nsi._2013._12.connection.types.{ChildSummaryType, QuerySummaryResultCriteriaType, ReservationConfirmCriteriaType, ReservationRequestCriteriaType}
 import scala.collection.JavaConverters._

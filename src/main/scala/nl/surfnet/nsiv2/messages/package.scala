@@ -34,7 +34,7 @@ import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 import jakarta.xml.bind.JAXBElement
 import scala.reflect.ClassTag
@@ -211,7 +211,7 @@ package object messages {
     def shallowCopy: A = ShallowCopyable[A].shallowCopy(a)
   }
 
-  implicit val P2PServiceBaseTypeShallowCopyable = ShallowCopyable.build { a: P2PServiceBaseType =>
+  implicit val P2PServiceBaseTypeShallowCopyable: ShallowCopyable[P2PServiceBaseType] = ShallowCopyable.build { a =>
     new P2PServiceBaseType()
       .withAny(a.getAny)
       .withCapacity(a.getCapacity)
@@ -223,7 +223,7 @@ package object messages {
       .withSymmetricPath(a.isSymmetricPath)
   }
 
-  implicit val ScheduleTypeShallowCopyable = ShallowCopyable.build { a: ScheduleType =>
+  implicit val ScheduleTypeShallowCopyable: ShallowCopyable[ScheduleType] = ShallowCopyable.build { a =>
     new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
   }
 

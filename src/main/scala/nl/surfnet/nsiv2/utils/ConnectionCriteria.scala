@@ -29,11 +29,11 @@ final case class ConnectionCriteria(pending: Option[Either[ReservationRequestCri
   def withRequested(requested: ReservationRequestCriteriaType) = copy(pending = Some(Left(requested)))
   def withHeld(held: ReservationConfirmCriteriaType) = copy(pending = Some(Right(held)))
 
-  def commit = copy(pending = None, committed = pending.flatMap(_.right.toOption))
+  def commit = copy(pending = None, committed = pending.flatMap(_.toOption))
   def abort = copy(pending = None)
 
   def requested = pending.flatMap(_.left.toOption)
-  def confirmed = pending.flatMap(_.right.toOption)
+  def confirmed = pending.flatMap(_.toOption)
 
   def pendingVersion: Int = {
     pending.flatMap(_.fold(

@@ -29,7 +29,7 @@ import com.google.common.collect.TreeRangeSet
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.regex.Pattern
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.SortedMap
 import scala.util.Try
 import play.utils.UriEncoding
@@ -105,7 +105,7 @@ object VlanRange {
       case RANGE_PATTERN(lower, upper) => GRange.closed(Integer.valueOf(lower), Integer.valueOf(upper))
       case SINGLETON_PATTERN(value)    => GRange.singleton(Integer.valueOf(value))
     }
-    VlanRange(ranges)
+    VlanRange(ranges.toIndexedSeq)
   }.toOption
 }
 
@@ -149,7 +149,7 @@ object Stp {
   type Label = (String, Option[String])
 
   import scala.math.Ordering.Implicits._
-  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.labels.toStream))
+  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
 
   private val LabelPattern = "([^=]*)(?:=([^=]*))?".r
 
@@ -168,7 +168,7 @@ object Stp {
         val parsedLabels = queryString.split(Pattern.quote("&")).map(parseLabel)
         val labels = if (parsedLabels contains None) None else Some(parsedLabels.map(_.get))
         labels.map { l =>
-          Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l: _*))
+          Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l.toIndexedSeq: _*))
         }
       case _ =>
         None

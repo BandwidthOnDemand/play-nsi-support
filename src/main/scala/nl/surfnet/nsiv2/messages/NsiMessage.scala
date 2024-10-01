@@ -31,7 +31,7 @@ import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import org.ogf.schemas.nsi._2013._12.framework.types._
 import org.ogf.schemas.nsi._2015._04.connection.pathtrace.PathTraceType
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")

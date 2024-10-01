@@ -56,7 +56,7 @@ object Generators {
 
   implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(for {
     capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)
-    directionality <- Gen.oneOf(DirectionalityType.values())
+    directionality <- Gen.oneOf(DirectionalityType.values().toIndexedSeq)
     symmetricPath <- arbitrary[Boolean]
     sourceStp <- Gen.oneOf("source-1", "source-2")
     destStp <- Gen.oneOf("dest-1", "dest-2")

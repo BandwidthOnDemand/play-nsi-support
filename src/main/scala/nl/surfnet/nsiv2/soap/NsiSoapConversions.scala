@@ -44,7 +44,7 @@ import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import org.w3c.dom.{ Document, Element }
 import org.xml.sax.helpers.DefaultHandler
 import org.xml.sax.SAXParseException
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -53,7 +53,7 @@ import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
 
 object NsiSoapConversions {
-  implicit val ByteArrayToString = Conversion.build[ByteString, String] { bytes =>
+  implicit val ByteArrayToString: Conversion[ByteString, String] = Conversion.build[ByteString, String] { bytes =>
     Try(bytes.utf8String)
   } { string =>
     Try(ByteString(string, "UTF-8"))
@@ -81,7 +81,7 @@ object NsiSoapConversions {
   private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
   private val samlFactory = new oasis.names.tc.saml._2_0.assertion.ObjectFactory()
   private val pathTraceFactory = new org.ogf.schemas.nsi._2015._04.connection.pathtrace.ObjectFactory()
-  private val SchemaPackages = Seq(typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory, pathTraceFactory).map(_.getClass().getPackage().getName())
+  private val SchemaPackages = Seq[AnyRef](typesFactory, headersFactory, pointToPointServiceFactory, gnsFactory, samlFactory, pathTraceFactory).map(_.getClass().getPackage().getName())
 
   def NsiProviderMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit bodyConversion: Conversion[T, Element]): Conversion[NsiProviderMessage[T], Document] = (Conversion.build[NsiProviderMessage[T], (Option[NsiHeaders], T)] {
     message => Success((Some(message.headers), message.body))
@@ -103,7 +103,7 @@ object NsiSoapConversions {
     result.getNode().asInstanceOf[Document].getDocumentElement()
   }
 
-  implicit val NsiAcknowledgementOperationToElement = Conversion.build[NsiAcknowledgement, Element] {
+  implicit val NsiAcknowledgementOperationToElement: Conversion[NsiAcknowledgement, Element] = Conversion.build[NsiAcknowledgement, Element] {
     case GenericAck() =>
       marshal(typesFactory.createAcknowledgment(new GenericAcknowledgmentType()))
     case ReserveResponse(connectionId) =>
@@ -130,7 +130,7 @@ object NsiSoapConversions {
       }
   } {
     messageFactories(Map[String, NsiMessageParser[NsiAcknowledgement]](
-      "acknowledgment" -> NsiMessageParser { (body: GenericAcknowledgmentType) => Success(GenericAck()) },
+      "acknowledgment" -> NsiMessageParser { (_: GenericAcknowledgmentType) => Success(GenericAck()) },
       "reserveResponse" -> NsiMessageParser { (body: ReserveResponseType) =>
         Success(ReserveResponse(body.getConnectionId()))
       },
@@ -148,7 +148,7 @@ object NsiSoapConversions {
       }))
   }
 
-  implicit val NsiProviderOperationToElement = Conversion.build[NsiProviderOperation, Element] { operation =>
+  implicit val NsiProviderOperationToElement: Conversion[NsiProviderOperation, Element] = Conversion.build[NsiProviderOperation, Element] { operation =>
     marshal(operation match {
       case InitialReserve(body)                            => typesFactory.createReserve(body)
       case ModifyReserve(body)                             => typesFactory.createReserve(body)
@@ -182,7 +182,7 @@ object NsiSoapConversions {
       "reserve" -> NsiMessageParser { (body: ReserveType) =>
         if (body.getConnectionId eq null) {
           for {
-            service <- body.getCriteria.pointToPointService.toTry("initial reserve is missing point2point service")
+            _ <- body.getCriteria.pointToPointService.toTry("initial reserve is missing point2point service")
           } yield {
             InitialReserve(body)
           }
@@ -241,7 +241,7 @@ object NsiSoapConversions {
     case None                              => new QueryType()
   }
 
-  implicit val NsiRequesterOperationToElement = Conversion.build[NsiRequesterOperation, Element] { operation =>
+  implicit val NsiRequesterOperationToElement: Conversion[NsiRequesterOperation, Element] = Conversion.build[NsiRequesterOperation, Element] { operation =>
     marshal(operation match {
       case ReserveConfirmed(connectionId, criteria)  => typesFactory.createReserveConfirmed(new ReserveConfirmedType().withConnectionId(connectionId).withCriteria(criteria))
       case ReserveFailed(failure)                    => typesFactory.createReserveFailed(failure)
@@ -281,7 +281,7 @@ object NsiSoapConversions {
       "messageDeliveryTimeout" -> NsiMessageParser { (body: MessageDeliveryTimeoutRequestType) => Success(MessageDeliveryTimeout(body)) }))
   }
 
-  private implicit val NsiHeadersToCommonHeaderType = Conversion.build[NsiHeaders, CommonHeaderType] { headers =>
+  private implicit val NsiHeadersToCommonHeaderType: Conversion[NsiHeaders, CommonHeaderType] = Conversion.build[NsiHeaders, CommonHeaderType] { headers =>
     Try(new CommonHeaderType()
       .withCorrelationId(headers.correlationId.toString)
       .withReplyTo(headers.replyTo.map(_.toASCIIString()).orNull)

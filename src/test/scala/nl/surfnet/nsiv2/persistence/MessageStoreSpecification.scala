@@ -20,13 +20,13 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
   implicit def MessageConversion: Conversion[Message, MessageData]
   implicit def MessageGenerator: Gen[Message]
 
-  implicit def ArbitraryMessage = Arbitrary(MessageGenerator)
-  implicit def ArbitraryMessageData = Arbitrary(for {
+  implicit def ArbitraryMessage: Arbitrary[Message] = Arbitrary(MessageGenerator)
+  implicit def ArbitraryMessageData: Arbitrary[(Message, MessageData)] = Arbitrary(for {
     message <- MessageGenerator
     data <- MessageConversion(message).map(Gen.const).getOrElse(Gen.fail)
   } yield (message, data))
 
-  implicit def shrinkMessage: Shrink[Message] = Shrink(x => Stream.empty)
+  implicit def shrinkMessage: Shrink[Message] = Shrink(_ => Stream.empty)
 
   class Fixture extends WithApplication() {
     lazy val database = Databases.inMemory()

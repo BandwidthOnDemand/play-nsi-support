@@ -73,17 +73,17 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
   protected[this]type EventHandler = PartialFunction[Event, State]
   protected[this]type TransitionHandler = PartialFunction[(S, S), Seq[O]]
 
-  protected[this] def when(stateName: S, otherStateNames: S*)(handler: EventHandler) {
+  protected[this] def when(stateName: S, otherStateNames: S*)(handler: EventHandler): Unit = {
     val states = stateName :: otherStateNames.toList
     states.foreach { state =>
       require(!_handlers.contains(state), s"handler for state $state is already defined")
     }
     _handlers ++= states.map { _ -> handler }
   }
-  protected[this] def whenUnhandled(handler: EventHandler) {
+  protected[this] def whenUnhandled(handler: EventHandler): Unit = {
     _unhandled = handler
   }
-  protected[this] def onTransition(handler: TransitionHandler) {
+  protected[this] def onTransition(handler: TransitionHandler): Unit = {
     _transitionHandler = handler
   }
 

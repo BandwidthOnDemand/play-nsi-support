@@ -8,7 +8,7 @@ import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.messages._
 import nl.surfnet.nsiv2.utils._
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Failure
 import scala.util.Success
 import akka.util.ByteString

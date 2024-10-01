@@ -87,8 +87,8 @@ case class QuerySummary(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservat
 case class QuerySummarySync(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
 case class QueryRecursive(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
 
-case class QueryNotification(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery
-case class QueryNotificationSync(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery
+case class QueryNotification(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
+case class QueryNotificationSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
 
-case class QueryResult(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery
-case class QueryResultSync(connectionId: ConnectionId, start: Option[Int], end: Option[Int]) extends NsiProviderQuery
+case class QueryResult(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
+case class QueryResultSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery

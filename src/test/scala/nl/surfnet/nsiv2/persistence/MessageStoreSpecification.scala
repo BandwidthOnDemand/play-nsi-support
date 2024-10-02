@@ -7,9 +7,10 @@ import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Shrink
 import play.api.db.Databases
-import play.api.test._
+import play.api.test.*
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.soap.Conversion
+import play.api.db.Database
 
 abstract class MessageStoreSpecification
     extends org.specs2.mutable.Specification
@@ -31,11 +32,11 @@ abstract class MessageStoreSpecification
   implicit def shrinkMessage: Shrink[Message] = Shrink(_ => Stream.empty)
 
   class Fixture extends WithApplication() {
-    lazy val database = Databases.inMemory()
+    lazy val database: Database = Databases.inMemory()
     lazy val requesterNsa = "requester_msa"
-    lazy val timestamp = Instant.now()
+    lazy val timestamp: Instant = Instant.now()
     lazy val aggregatedConnectionId = newConnectionId
-    lazy val messageStore = {
+    lazy val messageStore: MessageStore[Message] = {
       val s = new MessageStore[Message](database)
       s.create(aggregatedConnectionId, timestamp, requesterNsa)
       s
@@ -44,7 +45,7 @@ abstract class MessageStoreSpecification
 
   "MessageStore" should {
     "fail to store message for unknown connection" in new Fixture() {
-      prop { (message: Message) =>
+      override def running() = prop { (message: Message) =>
         val unknownConnectionId = newConnectionId
 
         messageStore.storeInboundWithOutboundMessages(
@@ -57,7 +58,7 @@ abstract class MessageStoreSpecification
     }
 
     "fail to store a message for a deleted connection" in new Fixture() {
-      prop { (message: Message) =>
+      override def running() = prop { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 
         messageStore.storeInboundWithOutboundMessages(
@@ -70,7 +71,7 @@ abstract class MessageStoreSpecification
     }
 
     "append new messages at the end" in new Fixture {
-      prop { (message: Message) =>
+      override def running() = prop { (message: Message) =>
         messageStore.storeInboundWithOutboundMessages(
           aggregatedConnectionId,
           timestamp,
@@ -85,7 +86,7 @@ abstract class MessageStoreSpecification
     }
 
     "retrieve based on correlation id" in new Fixture {
-      prop { (message: Message) =>
+      override def running() = prop { (message: Message) =>
         withCorrelationId(message) { correlationId =>
           messageStore.storeInboundWithOutboundMessages(
             aggregatedConnectionId,

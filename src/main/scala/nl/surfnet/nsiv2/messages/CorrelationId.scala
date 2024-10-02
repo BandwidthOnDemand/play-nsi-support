@@ -27,13 +27,14 @@ import java.util.UUID
 import scala.util.Try
 
 case class CorrelationId private (value: UUID) {
-  override def toString = s"${CorrelationId.Prefix}${value}"
+  override def toString: String = s"${CorrelationId.Prefix}${value}"
 }
 
 object CorrelationId {
   val Prefix = "urn:uuid:"
 
-  def apply(mostSigBits: Long, leastSigBits: Long) = fromUuid(new UUID(mostSigBits, leastSigBits))
+  def apply(mostSigBits: Long, leastSigBits: Long): CorrelationId =
+    fromUuid(new UUID(mostSigBits, leastSigBits))
 
   def fromUuid(uuid: UUID): CorrelationId = CorrelationId(uuid)
 
@@ -42,5 +43,5 @@ object CorrelationId {
     case _              => None
   }
 
-  def random() = fromUuid(UUID.randomUUID())
+  def random(): CorrelationId = fromUuid(UUID.randomUUID())
 }

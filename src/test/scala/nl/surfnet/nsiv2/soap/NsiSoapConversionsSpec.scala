@@ -1,23 +1,22 @@
 package nl.surfnet.nsiv2.soap
 
-import org.specs2._
+import org.specs2.*
 
 import jakarta.xml.bind.JAXBElement
 import net.nordu.namespaces._2013._12.gnsbod.{ConnectionTraceType, ConnectionType}
-import nl.surfnet.nsiv2.messages.CorrelationId
-import nl.surfnet.nsiv2.messages._
-import nl.surfnet.nsiv2.utils._
+import nl.surfnet.nsiv2.messages.*
+import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Failure
 import scala.util.Success
 import akka.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class NsiSoapConversionsSpec extends mutable.Specification {
-  import NsiSoapConversions._
+  import NsiSoapConversions.*
 
-  val DefaultAckHeaders = NsiHeaders(
+  val DefaultAckHeaders: NsiHeaders = NsiHeaders(
     CorrelationId.random(),
     "requesterNSA",
     "providerNSA",
@@ -25,15 +24,20 @@ class NsiSoapConversionsSpec extends mutable.Specification {
     NsiHeaders.RequesterProtocolVersion
   )
 
-  val providerOperationToStringConversion = NsiProviderMessageToDocument(None)(
-    NsiProviderOperationToElement
-  ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
-  val requestOperationToStringConversion = NsiRequesterMessageToDocument(None)(
-    NsiRequesterOperationToElement
-  ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
-  val requestAckToStringConversion = NsiRequesterMessageToDocument(Some(DefaultAckHeaders))(
-    NsiAcknowledgementOperationToElement
-  ).andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
+  val providerOperationToStringConversion
+      : Conversion[NsiProviderMessage[NsiProviderOperation], String] =
+    NsiProviderMessageToDocument(None)(
+      NsiProviderOperationToElement
+    ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+  val requestOperationToStringConversion
+      : Conversion[NsiRequesterMessage[NsiRequesterOperation], String] =
+    NsiRequesterMessageToDocument(None)(
+      NsiRequesterOperationToElement
+    ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+  val requestAckToStringConversion: Conversion[NsiRequesterMessage[NsiAcknowledgement], String] =
+    NsiRequesterMessageToDocument(Some(DefaultAckHeaders))(
+      NsiAcknowledgementOperationToElement
+    ).andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
 
   "NSI requester operation to string" should {
 

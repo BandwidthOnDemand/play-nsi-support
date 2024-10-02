@@ -30,7 +30,7 @@ import org.ogf.schemas.nsi._2013._12.connection.types.{
   ReservationConfirmCriteriaType,
   ReservationRequestCriteriaType
 }
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 
 /** Wraps an JAXB XML any list and tries to correctly implement equals and hashCode for data wrapped
@@ -57,28 +57,28 @@ class XmlAny private (val elements: List[AnyRef]) {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
   }
 
-  def remove(nullElement: JAXBElement[_]): XmlAny = XmlAny(elements filter {
-    case element: JAXBElement[_] if element.getName() == nullElement.getName => false
+  def remove(nullElement: JAXBElement[?]): XmlAny = XmlAny(elements filter {
+    case element: JAXBElement[?] if element.getName() == nullElement.getName => false
     case _                                                                   => true
   })
 
-  def update(element: JAXBElement[_]): XmlAny = XmlAny(element :: remove(element).elements)
+  def update(element: JAXBElement[?]): XmlAny = XmlAny(element :: remove(element).elements)
 
   private def unwrapJaxbElements(any: Seq[AnyRef]) = any.map {
-    case jaxb: JAXBElement[_] => XmlAny.Element(jaxb.getName(), jaxb.isNil(), jaxb.getValue())
+    case jaxb: JAXBElement[?] => XmlAny.Element(jaxb.getName(), jaxb.isNil(), jaxb.getValue())
     case other                => other
   }
 }
 object XmlAny {
-  def empty = apply(Nil)
+  def empty: XmlAny = apply(Nil)
   def apply(elements: Seq[AnyRef]): XmlAny = new XmlAny(elements.toList)
   def unapply(any: XmlAny): Option[List[AnyRef]] = Some(any.elements)
 
   case class Element[T] private[XmlAny] (name: QName, nil: Boolean, value: T)
   object Element {
     def unapply(any: Any): Option[(QName, Option[Any])] = any match {
-      case element: JAXBElement[_] =>
-        Some((element.getName(), if (element.isNil()) None else Option(element.getValue())))
+      case element: JAXBElement[?] =>
+        Some((element.getName(), if element.isNil() then None else Option(element.getValue())))
       case _ =>
         None
     }
@@ -100,17 +100,17 @@ trait HasXmlAny[A] {
       case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
     }
 
-  def removeAny(a: A, nullElement: JAXBElement[_]): Boolean =
+  def removeAny(a: A, nullElement: JAXBElement[?]): Boolean =
     getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
       override def test(any: AnyRef): Boolean = any match {
-        case element: JAXBElement[_] if element.getName() == nullElement.getName =>
+        case element: JAXBElement[?] if element.getName() == nullElement.getName =>
           true
         case _ =>
           false
       }
     })
 
-  def updateAny(a: A, element: JAXBElement[_]): Unit = {
+  def updateAny(a: A, element: JAXBElement[?]): Unit = {
     removeAny(a, element)
     getAny(a).add(element)
     ()

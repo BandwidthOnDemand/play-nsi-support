@@ -25,19 +25,21 @@ package nl.surfnet.nsiv2
 import java.net.URI
 import java.util.function.Predicate
 import javax.xml.datatype.XMLGregorianCalendar
-import nl.surfnet.nsiv2.utils._
+import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
-import play.api.libs.functional.syntax._
-import play.api.libs.json._
-import scala.jdk.CollectionConverters._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import jakarta.xml.bind.JAXBElement
 import scala.reflect.ClassTag
+import java.time.Instant
+import javax.xml.namespace.QName
 
 package object messages {
   type RequesterNsa = String
@@ -49,10 +51,10 @@ package object messages {
 
   val NSI_HEADERS_OBJECT_FACTORY =
     new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
-  val QNAME_NSI_POINT_TO_POINT = PointToPointObjectFactory.createP2Ps(null).getName()
-  val QNAME_NSI_P2PS_CAPACITY = PointToPointObjectFactory.createCapacity(null).getName()
-  val QNAME_NSI_HEADERS = NSI_HEADERS_OBJECT_FACTORY.createNsiHeader(null).getName()
-  val QNAME_NSI_TYPES = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory())
+  val QNAME_NSI_POINT_TO_POINT: QName = PointToPointObjectFactory.createP2Ps(null).getName()
+  val QNAME_NSI_P2PS_CAPACITY: QName = PointToPointObjectFactory.createCapacity(null).getName()
+  val QNAME_NSI_HEADERS: QName = NSI_HEADERS_OBJECT_FACTORY.createNsiHeader(null).getName()
+  val QNAME_NSI_TYPES: QName = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory())
     .createAcknowledgment(null)
     .getName()
 
@@ -75,8 +77,8 @@ package object messages {
 
   def unaryCaseClassFormat[A: Format, B](
       fieldName: String
-  )(apply: A => B, unapply: B => Option[A]): OFormat[B] =
-    (__ \ fieldName).format[A].inmap(apply, unlift(unapply))
+  )(apply: A => B, unapply: B => A): OFormat[B] =
+    (__ \ fieldName).format[A].inmap(apply, unapply)
 
   implicit val JavaTimeInstantFormat: Format[java.time.Instant] = Format(
     implicitly[Reads[Long]].map(java.time.Instant.ofEpochMilli),
@@ -91,7 +93,7 @@ package object messages {
   )(parse = CorrelationId.fromString, print = _.toString)
 
   implicit class XmlGregorianCalendarOps(cal: XMLGregorianCalendar) {
-    def toInstant = {
+    def toInstant: Instant = {
       cal.toGregorianCalendar.toZonedDateTime.toInstant
     }
   }
@@ -99,11 +101,12 @@ package object messages {
   implicit class HasXmlAnyOps[A: HasXmlAny](a: A) {
     def any: XmlAny = HasXmlAny[A].any(a)
 
-    def findAny[T: ClassTag](nullElement: JAXBElement[T]) = HasXmlAny[A].findAny(a, nullElement)
-    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]) =
+    def findAny[T: ClassTag](nullElement: JAXBElement[T]): List[T] =
+      HasXmlAny[A].findAny(a, nullElement)
+    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]): Option[T] =
       HasXmlAny[A].findFirstAny(a, nullElement)
-    def removeAny(nullElement: JAXBElement[_]) = HasXmlAny[A].removeAny(a, nullElement)
-    def updateAny(element: JAXBElement[_]) = HasXmlAny[A].updateAny(a, element)
+    def removeAny(nullElement: JAXBElement[?]): Boolean = HasXmlAny[A].removeAny(a, nullElement)
+    def updateAny(element: JAXBElement[?]): Unit = HasXmlAny[A].updateAny(a, element)
   }
 
   implicit class XmlPointToPointServiceOps[A: HasXmlAny](a: A) {
@@ -183,7 +186,7 @@ package object messages {
         .withServiceType(previouslyCommittedCriteria.getServiceType)
         .withSchedule(schedule)
         .withVersion(
-          if (requestCriteria.getVersion eq null) previouslyCommittedCriteria.getVersion + 1
+          if requestCriteria.getVersion eq null then previouslyCommittedCriteria.getVersion + 1
           else requestCriteria.getVersion
         )
       confirmCriteria.withPointToPointService(confirmP2P)
@@ -212,7 +215,7 @@ package object messages {
     def schedule: Option[ScheduleType] = Option(requestCriteria.getSchedule)
 
     def version: Option[Int] =
-      if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
+      if requestCriteria.getVersion eq null then None else Some(requestCriteria.getVersion.intValue)
 
     def modifiedCapacity: Option[Long] = requestCriteria
       .findFirstAny(NULL_CAPACITY_P2PS_ELEMENT)
@@ -228,7 +231,7 @@ package object messages {
 
     def modifiedParameters: Seq[TypeValueType] =
       requestCriteria.findAny(NULL_PARAMETER_P2PS_ELEMENT)
-    def withModifiedParameters(parameters: TypeValueType*) = {
+    def withModifiedParameters(parameters: TypeValueType*): Boolean = {
       requestCriteria.removeAny(NULL_PARAMETER_P2PS_ELEMENT)
       requestCriteria
         .getAny()

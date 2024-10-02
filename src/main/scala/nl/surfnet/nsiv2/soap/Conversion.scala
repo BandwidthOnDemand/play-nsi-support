@@ -30,7 +30,7 @@ trait Conversion[A, B] { outer =>
   def apply(a: A): Try[B]
   def invert: Conversion[B, A]
 
-  def andThen[C](that: Conversion[B, C]) = new Conversion[A, C] { inner =>
+  def andThen[C](that: Conversion[B, C]): Conversion[A, C] = new Conversion[A, C] { inner =>
     override def apply(a: A): Try[C] = outer.apply(a).flatMap(that.apply)
     override val invert: Conversion[C, A] = new Conversion[C, A] {
       override def apply(c: C): Try[A] = that.invert.apply(c).flatMap(outer.invert.apply)
@@ -50,6 +50,6 @@ object Conversion {
     }
   }
 
-  def convert[A, B](a: A)(implicit conversion: Conversion[A, B]) = conversion(a)
-  def invert[A, B](b: B)(implicit conversion: Conversion[A, B]) = conversion.invert(b)
+  def convert[A, B](a: A)(implicit conversion: Conversion[A, B]): Try[B] = conversion(a)
+  def invert[A, B](b: B)(implicit conversion: Conversion[A, B]): Try[A] = conversion.invert(b)
 }

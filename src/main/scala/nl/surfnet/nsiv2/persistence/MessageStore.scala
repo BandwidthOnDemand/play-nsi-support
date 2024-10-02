@@ -23,20 +23,20 @@
 package nl.surfnet.nsiv2
 package persistence
 
-import anorm._
-import anorm.SqlParser._
+import anorm.*
+import anorm.SqlParser.*
 import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
-import nl.surfnet.nsiv2.messages._
-import nl.surfnet.nsiv2.soap._
-import nl.surfnet.nsiv2.soap.NsiSoapConversions._
-import nl.surfnet.nsiv2.utils._
+import nl.surfnet.nsiv2.messages.*
+import nl.surfnet.nsiv2.soap.*
+import nl.surfnet.nsiv2.soap.NsiSoapConversions.*
+import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import play.api.Logger
 import play.api.db.Database
-import play.api.libs.json._
+import play.api.libs.json.*
 import scala.util.{Try, Success, Failure}
 
 case class MessageData(correlationId: Option[CorrelationId], tpe: String, content: String)
@@ -79,7 +79,7 @@ object MessageData {
 }
 
 case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T) {
-  def map[B](f: T => B) = copy(message = f(message))
+  def map[B](f: T => B): MessageRecord[B] = copy(message = f(message))
 }
 
 class MessageStore[M] @Inject() (database: Database)(implicit
@@ -102,7 +102,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit
       createdAt: Instant,
       inbound: M,
       outbound: Seq[M]
-  ) = database.withTransaction { implicit connection =>
+  ): Unit = database.withTransaction { implicit connection =>
     val connectionPk =
       SQL"""SELECT id FROM connections WHERE connection_id = ${connectionId} AND deleted_at IS NULL"""
         .as(get[Long]("id").singleOpt)
@@ -189,7 +189,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit
       implicit connection: Connection
   ) = {
     val serialized = conversion(message).get
-    import serialized._
+    import serialized.*
     SQL"""
         INSERT INTO messages (connection_id, correlation_id, type, content, created_at, inbound_message_id)
              VALUES          (${connectionPk}, CAST(${correlationId.map(

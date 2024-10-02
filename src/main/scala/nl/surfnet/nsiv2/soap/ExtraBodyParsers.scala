@@ -26,18 +26,18 @@ import akka.util.ByteString
 
 import jakarta.xml.soap.SOAPConstants
 
-import nl.surfnet.nsiv2._
-import nl.surfnet.nsiv2.messages._
+import nl.surfnet.nsiv2.*
+import nl.surfnet.nsiv2.messages.*
 
 import org.w3c.dom.Document
 import play.api.Logger
 import play.api.http.{ContentTypeOf, Writeable}
-import play.api.mvc._
+import play.api.mvc.*
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-import soap.NsiSoapConversions._
+import soap.NsiSoapConversions.*
 
 class ExtraBodyParsers(implicit
     ec: ExecutionContext,
@@ -89,7 +89,7 @@ class ExtraBodyParsers(implicit
       providerNsa: String,
       action: NsiProviderAction
   ): NsiProviderAction = { message =>
-    if (message.headers.providerNSA == providerNsa) action(message)
+    if message.headers.providerNSA == providerNsa then action(message)
     else {
       logger.info(
         s"The providerNSA '${message.headers.providerNSA}' does not match the expected providerNSA '$providerNsa'"
@@ -107,7 +107,7 @@ class ExtraBodyParsers(implicit
       requesterNsa: String,
       action: NsiRequesterAction
   ): NsiRequesterAction = { message =>
-    if (message.headers.requesterNSA == requesterNsa) action(message)
+    if message.headers.requesterNSA == requesterNsa then action(message)
     else {
       logger.info(
         s"The requesterNSA '${message.headers.requesterNSA}' does not match the expected requesterNSA '$requesterNsa'"
@@ -127,7 +127,7 @@ class ExtraBodyParsers(implicit
       parser: BodyParser[T[M]]
   )(action: T[M] => Future[T[NsiAcknowledgement]])(implicit
       conversion: Conversion[T[NsiAcknowledgement], Document]
-  ) = actionBuilder.async(parser) { request =>
+  ): Action[T[M]] = actionBuilder.async(parser) { request =>
     action(request.body)
       .map { ack =>
         logger.debug(
@@ -173,13 +173,13 @@ class ExtraBodyParsers(implicit
               Results
                 .InternalServerError(
                   <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
-              <S:Body>
-                <S:Fault>
-                  <faultcode>S:Client</faultcode>
-                  <faultstring>Error parsing SOAP request: {error}</faultstring>
-                </S:Fault>
-              </S:Body>
-              </S:Envelope>
+                    <S:Body>
+                      <S:Fault>
+                        <faultcode>S:Client</faultcode>
+                        <faultstring>Error parsing SOAP request: {error}</faultstring>
+                      </S:Fault>
+                    </S:Body>
+                  </S:Envelope>
                 )
                 .as(SOAPConstants.SOAP_1_1_CONTENT_TYPE)
             )

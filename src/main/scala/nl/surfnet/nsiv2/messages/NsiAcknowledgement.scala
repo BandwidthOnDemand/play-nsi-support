@@ -23,7 +23,7 @@
 package nl.surfnet.nsiv2.messages
 
 import javax.xml.datatype.XMLGregorianCalendar
-import org.ogf.schemas.nsi._2013._12.connection.types._
+import org.ogf.schemas.nsi._2013._12.connection.types.*
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 
 sealed trait NsiAcknowledgement extends NsiOperation {

@@ -2,17 +2,13 @@ name := "play-nsi-support"
 
 organization := "nl.surfnet"
 
-scalaVersion := "2.13.14"
+scalaVersion := "3.3.4"
 
 scalacOptions ++= Seq(
-  "-Xsource:3",
-  "-Xsource-features:case-apply-copy-access",
   "-deprecation",
   "-feature",
   "-unchecked",
-  "-Xlint",
-  "-Ywarn-unused",
-  "-Ywarn-value-discard",
+  "-Wunused:imports,privates,locals,params",
   "-release:21"
 )
 
@@ -33,7 +29,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "2.3.0",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-jdbc" % playVersion,
-  "com.typesafe.play" %% "play-json" % playVersion,
+  "com.typesafe.play" %% "play-json" % "2.10.6",
   "org.playframework.anorm" %% "anorm" % "2.7.0",
   "com.typesafe.play" %% "play-specs2" % playVersion % "test",
   "org.specs2" %% "specs2-scalacheck" % "4.20.7" % "test"
@@ -44,8 +40,6 @@ resolvers += Resolver.typesafeRepo("releases")
 githubOwner := "BandwidthOnDemand"
 githubRepository := "play-nsi-support"
 resolvers += Resolver.githubPackages("BandwidthOnDemand")
-
-Test / scalacOptions ++= Seq("-Yrangepos")
 
 Test / testFrameworks := Seq(TestFrameworks.Specs2)
 

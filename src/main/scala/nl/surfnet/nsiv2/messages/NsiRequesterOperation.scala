@@ -23,10 +23,10 @@
 package nl.surfnet.nsiv2.messages
 
 import javax.xml.datatype.XMLGregorianCalendar
-import org.ogf.schemas.nsi._2013._12.connection.types._
+import org.ogf.schemas.nsi._2013._12.connection.types.*
 
 sealed trait NsiRequesterOperation extends NsiOperation {
-  final def action = this.getClass().getSimpleName()
+  final def action: String = this.getClass().getSimpleName()
   final def soapActionUrl: String =
     s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"
 }
@@ -68,7 +68,7 @@ case class QueryResultConfirmed(results: Seq[QueryResultResponseType]) extends N
 case class ErrorReply(error: GenericErrorType) extends NsiRequesterOperation
 
 case class ErrorEvent(override val notification: ErrorEventType) extends NsiNotification {
-  override def connectionId = notification.getConnectionId()
+  override def connectionId: String = notification.getConnectionId()
 }
 case class DataPlaneStateChange(override val notification: DataPlaneStateChangeRequestType)
     extends NsiNotification {

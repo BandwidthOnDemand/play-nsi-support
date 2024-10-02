@@ -4,7 +4,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import com.google.common.collect.Range
-import scala.math.Ordering.Implicits._
+import scala.math.Ordering.Implicits.*
 import scala.collection.immutable.SortedMap
 import org.specs2.matcher.Matcher
 
@@ -17,8 +17,8 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
 
   private implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(for {
     identifier <- arbitrary[String] if identifier.nonEmpty
-    labels <- arbitrary[Seq[Stp.Label]] if labels.forall(_._1.nonEmpty)
-  } yield Stp(identifier, SortedMap(labels: _*)))
+    labels <- arbitrary[Seq[Stp.Label]] if labels.forall(label => label._1.nonEmpty)
+  } yield Stp(identifier, SortedMap(labels*)))
 
   private implicit val ArbitraryVlanRange: Arbitrary[VlanRange] = Arbitrary(
     Gen
@@ -44,7 +44,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
     }
 
     "parse singleton" in {
-      VlanRange.fromString("3") must beSome.which(_.isSingleton)
+      VlanRange.fromString("3") must beSome(VlanRange.singleton(3))
     }
 
     "calculate intersection" in {

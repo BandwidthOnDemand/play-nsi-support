@@ -24,8 +24,8 @@ package nl.surfnet.nsiv2.soap
 
 import java.net.URI
 import play.api.http.ContentTypes
-import play.api.mvc._
-import play.api.mvc.Results._
+import play.api.mvc.*
+import play.api.mvc.Results.*
 import scala.util.Try
 import scala.concurrent.Future
 
@@ -41,14 +41,13 @@ trait SoapWebService {
 
   def serviceUrl: String
 
-  def wsdl = actionBuilder.async { implicit request =>
-    if (request.getQueryString("wsdl").isDefined || request.getQueryString("WSDL").isDefined)
+  def wsdl: Action[AnyContent] = actionBuilder.async { implicit request =>
+    if request.getQueryString("wsdl").isDefined || request.getQueryString("WSDL").isDefined then
       wsdlOrXsd(WsdlBasename)(request)
-    else
-      Future.successful(Results.NotFound)
+    else Future.successful(Results.NotFound)
   }
 
-  def wsdlOrXsd(name: String) = serveWsdl(name) { _ => replaceSoapAddress }
+  def wsdlOrXsd(name: String): Action[AnyContent] = serveWsdl(name) { _ => replaceSoapAddress }
 
   private def replaceSoapAddress(wsdl: String) = {
     wsdl.replaceAll(
@@ -57,7 +56,9 @@ trait SoapWebService {
     )
   }
 
-  private def serveWsdl(path: String)(transform: RequestHeader => String => String) =
+  private def serveWsdl(
+      path: String
+  )(transform: RequestHeader => String => String): Action[AnyContent] =
     actionBuilder { implicit request =>
       readClasspathWsdl(path)
         .map(transform(request))

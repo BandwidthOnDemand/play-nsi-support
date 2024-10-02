@@ -24,12 +24,12 @@ package nl.surfnet.nsiv2
 package messages
 
 import com.google.common.collect.ImmutableRangeSet
-import com.google.common.collect.{Range => GRange}
+import com.google.common.collect.{Range as GRange}
 import com.google.common.collect.TreeRangeSet
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.regex.Pattern
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.collection.immutable.SortedMap
 import scala.util.Try
 import play.utils.UriEncoding
@@ -58,7 +58,7 @@ final class VlanRange(private val ranges: ImmutableRangeSet[Integer]) {
   def intersect(that: VlanRange): Option[VlanRange] = {
     val intersection = TreeRangeSet.create[Integer]
     this.ranges.asSet(DiscreteDomain.integers()).asScala.foreach { (vlan: Integer) =>
-      if (that.ranges.contains(vlan)) {
+      if that.ranges.contains(vlan) then {
         intersection.add(GRange.closedOpen(vlan, vlan + 1))
       }
     }
@@ -66,17 +66,18 @@ final class VlanRange(private val ranges: ImmutableRangeSet[Integer]) {
     intersection.asRanges().asScala.foreach { range =>
       closedRanges.add(GRange.closed(range.lowerEndpoint, range.upperEndpoint - 1))
     }
-    if (closedRanges.isEmpty) None else Some(new VlanRange(ImmutableRangeSet.copyOf(closedRanges)))
+    if closedRanges.isEmpty then None
+    else Some(new VlanRange(ImmutableRangeSet.copyOf(closedRanges)))
   }
 
-  override def equals(o: Any) = o match {
+  override def equals(o: Any): Boolean = o match {
     case that: VlanRange => this.ranges == that.ranges
     case _               => false
   }
 
   override def hashCode = ranges.hashCode
 
-  override def toString = ranges
+  override def toString: String = ranges
     .asRanges()
     .asScala
     .map { range =>
@@ -104,13 +105,14 @@ object VlanRange {
   def singleton(v: Int): VlanRange = apply(Seq(GRange.singleton(v)))
 
   def range(range: Range): Option[VlanRange] = {
-    val end = if (range.isInclusive) range.end else range.end - 1
-    if (range.start <= end && range.step == 1) Some(VlanRange(Seq(GRange.closed(range.start, end))))
+    val end = if range.isInclusive then range.end else range.end - 1
+    if range.start <= end && range.step == 1 then
+      Some(VlanRange(Seq(GRange.closed(range.start, end))))
     else None
   }
 
   def fromString(s: String): Option[VlanRange] =
-    if (!ALLOWED_SYNTAX.matcher(s).matches()) None
+    if !ALLOWED_SYNTAX.matcher(s).matches() then None
     else
       Try {
         val ranges = s.replaceAll("\\s+", "").split(",").map {
@@ -126,11 +128,11 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
   require(identifier.nonEmpty, "identifier must be non-empty")
   require(labels.forall(_._1.nonEmpty), "label types must be non-empty")
 
-  def withoutLabels = copy(labels = SortedMap.empty)
+  def withoutLabels: Stp = copy(labels = SortedMap.empty)
 
-  def withoutLabel(labelType: String) = copy(labels = labels - labelType)
+  def withoutLabel(labelType: String): Stp = copy(labels = labels - labelType)
 
-  def withLabel(labelType: String, labelValue: String) =
+  def withLabel(labelType: String, labelValue: String): Stp =
     copy(labels = labels + (labelType -> Some(labelValue)))
 
   def vlan: Option[VlanRange] = labels.getOrElse("vlan", None).flatMap(VlanRange.fromString)
@@ -150,13 +152,13 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
       case _                                => false
     }
 
-  def isCompatibleWith(that: Stp) =
+  def isCompatibleWith(that: Stp): Boolean =
     this.identifier == that.identifier && this.isClientVlanCompatibleWith(that) && this
       .isServerVlanCompatibleWith(that)
 
-  override def toString = UriEncoding.encodePathSegment(identifier, "UTF-8") ++ queryString
+  override def toString: String = UriEncoding.encodePathSegment(identifier, "UTF-8") ++ queryString
 
-  private def queryString = if (labels.isEmpty) ""
+  private def queryString = if labels.isEmpty then ""
   else
     labels.iterator
       .map {
@@ -170,7 +172,7 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
 object Stp {
   type Label = (String, Option[String])
 
-  import scala.math.Ordering.Implicits._
+  import scala.math.Ordering.Implicits.*
   implicit val StpOrdering: Ordering[Stp] =
     Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
 
@@ -194,9 +196,9 @@ object Stp {
         Some(Stp(UriEncoding.decodePath(identifier, "UTF-8")))
       case Array(identifier, queryString) if identifier.nonEmpty =>
         val parsedLabels = queryString.split(Pattern.quote("&")).map(parseLabel)
-        val labels = if (parsedLabels contains None) None else Some(parsedLabels.map(_.get))
+        val labels = if parsedLabels contains None then None else Some(parsedLabels.map(_.get))
         labels.map { l =>
-          Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l.toIndexedSeq: _*))
+          Stp(UriEncoding.decodePath(identifier, "UTF-8"), SortedMap(l.toIndexedSeq*))
         }
       case _ =>
         None

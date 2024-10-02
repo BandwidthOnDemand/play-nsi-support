@@ -28,10 +28,10 @@ import javax.xml.namespace.QName
 import net.nordu.namespaces._2013._12.gnsbod.{ConnectionType, ConnectionTraceType}
 
 import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
-import org.ogf.schemas.nsi._2013._12.framework.types._
+import org.ogf.schemas.nsi._2013._12.framework.types.*
 import org.ogf.schemas.nsi._2015._04.connection.pathtrace.PathTraceType
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object NsiHeaders {
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
@@ -73,7 +73,8 @@ case class NsiHeaders(
       .findFirst(NsiHeaders.NullConnectionTraceElement)
       .map(_.getConnection.asScala.toList) getOrElse Nil
 
-  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any = if (trace.isEmpty) {
+  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any = if trace.isEmpty
+  then {
     any.remove(NsiHeaders.NullConnectionTraceElement)
   } else {
     any.update(
@@ -85,7 +86,7 @@ case class NsiHeaders(
 
   def addConnectionTrace(value: String): NsiHeaders = {
     val oldTrace = connectionTrace
-    val index = if (oldTrace.isEmpty) 0 else oldTrace.map(_.getIndex).max + 1
+    val index = if oldTrace.isEmpty then 0 else oldTrace.map(_.getIndex).max + 1
     val newTrace = new ConnectionType().withIndex(index).withValue(value) :: oldTrace
     withConnectionTrace(newTrace)
   }
@@ -131,7 +132,8 @@ final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, bod
       ack
     )
 
-  def reply(reply: NsiRequesterOperation) = NsiRequesterMessage(headers.forAsyncReply, reply)
+  def reply(reply: NsiRequesterOperation): NsiRequesterMessage[NsiRequesterOperation] =
+    NsiRequesterMessage(headers.forAsyncReply, reply)
 }
 
 final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, body: T)
@@ -160,9 +162,9 @@ final case class NsiError(
     text: String,
     variables: Seq[(QName, String)]
 ) {
-  override def toString = s"$id: $description: $text"
+  override def toString: String = s"$id: $description: $text"
 
-  def toServiceException(nsaId: String, args: (QName, String)*) = {
+  def toServiceException(nsaId: String, args: (QName, String)*): ServiceExceptionType = {
     val variables = (this.variables ++ args) map { case (t, v) =>
       new TypeValuePairType().withNamespace(t.getNamespaceURI).withType(t.getLocalPart).withValue(v)
     }
@@ -183,74 +185,77 @@ object NsiError {
   def apply(id: String, description: String, text: String) =
     new NsiError(id, description, text, Seq.empty)
 
-  val GenericMessagePayloadError =
+  val GenericMessagePayloadError: NsiError =
     NsiError("00100", "GENERIC_MESSAGE_PAYLOAD_ERROR", "Illegal message payload")
   @deprecated(message = "use GenericMessagePayloadError", since = "NSI CS 2.1") val PayloadError =
     GenericMessagePayloadError
-  val MissingParameter = NsiError("00101", "MISSING_PARAMETER", "Invalid or missing parameter")
-  val UnsupportedParameter = NsiError(
+  val MissingParameter: NsiError =
+    NsiError("00101", "MISSING_PARAMETER", "Invalid or missing parameter")
+  val UnsupportedParameter: NsiError = NsiError(
     "00102",
     "UNSUPPORTED_PARAMETER",
     "Parameter provided contains an unsupported value that MUST be processed"
   )
-  val NotImplemented =
+  val NotImplemented: NsiError =
     NsiError("00103", "NOT_IMPLEMENTED", "Requested feature has not been implemented")
-  val VersionNotSupported =
+  val VersionNotSupported: NsiError =
     NsiError("00104", "VERSION_NOT_SUPPORTED", "The protocol version requested is not supported")
 
-  val GenericConnectionError =
+  val GenericConnectionError: NsiError =
     NsiError("00200", "GENERIC_CONNECTION_ERROR", "A connection error has occurred")
   @deprecated(message = "use GenericConnectionError", since = "NSI CS 2.1") val ConnectionError =
     GenericConnectionError
-  val InvalidTransition = NsiError(
+  val InvalidTransition: NsiError = NsiError(
     "00201",
     "INVALID_TRANSITION",
     "Connection state machine is in invalid state for received message"
   )
-  val ReservationNonExistent =
+  val ReservationNonExistent: NsiError =
     NsiError("00203", "RESERVATION_NONEXISTENT", "Schedule does not exist for connectionId")
   @deprecated(
     message = "use ReservationNonExistent",
     since = "NSI CS 2.1"
   ) val ConnectionNonExistent = ReservationNonExistent
 
-  val SecurityError = NsiError("00300", "GENERIC_SECURITY_ERROR", "A security error has occurred")
+  val SecurityError: NsiError =
+    NsiError("00300", "GENERIC_SECURITY_ERROR", "A security error has occurred")
 
-  val Unauthorized =
+  val Unauthorized: NsiError =
     NsiError("00302", "UNAUTHORIZED", "Insufficient authorization to perform requested operation")
   @deprecated(message = "use Unauthorized", since = "NSI CS 2.1") val AuthenticationFailure =
     Unauthorized
 
-  val TopologyError = NsiError("00400", "GENERIC_METADATA_ERROR", "A topology error has occurred")
+  val TopologyError: NsiError =
+    NsiError("00400", "GENERIC_METADATA_ERROR", "A topology error has occurred")
 
   @deprecated(message = "removed", since = "NSI CS 2.1")
-  val StpResolutionError =
+  val StpResolutionError: NsiError =
     NsiError("00402", "STP_RESOLUTION_ERROR", "Could not resolve STP to a managing NSA")
 
   @deprecated(message = "use NoServicePlanePathFound", since = "NSI CS 2.1")
-  val NoPathFound =
+  val NoPathFound: NsiError =
     NsiError("00403", "NO_PATH_FOUND", "Path computation failed to resolve route for reservation")
 
   @deprecated(message = "removed", since = "NSI CS 2.1")
-  val VlanIdInterchangeNotSupported = NsiError(
+  val VlanIdInterchangeNotSupported: NsiError = NsiError(
     "00404",
     "VLANID_INTERCHANGE_NOT_SUPPORTED",
     "VlanId interchange not supported for requested path"
   )
 
-  val DomainLookupError =
+  val DomainLookupError: NsiError =
     NsiError("00405", "DOMAIN_LOOKUP_ERROR", "Unknown network for requested resource")
 
-  val NsaLookupError =
+  val NsaLookupError: NsiError =
     NsiError("00406", "NSA_LOOKUP_ERROR", "Cannot map networkId to service interface")
 
-  val NoServicePlanePathFound = NsiError(
+  val NoServicePlanePathFound: NsiError = NsiError(
     "00407",
     "NO_SERVICEPLANE_PATH_FOUND",
     "No service plane path for selected connection segments"
   )
 
-  val GenericNsaError = NsiError(
+  val GenericNsaError: NsiError = NsiError(
     "00500",
     "GENERIC_NSA_ERROR",
     "An internal error has caused a message processing failure"
@@ -259,68 +264,70 @@ object NsiError {
   @deprecated(message = "use GenericInternalError", since = "NSI CS 2.1")
   val InternalError = GenericNsaError
 
-  val InternalNrmError = NsiError(
+  val InternalNrmError: NsiError = NsiError(
     "00501",
     "INTERNAL_NRM_ERROR",
     "An internal NRM error has caused a message processing failure"
   )
 
-  val ChildSegmentError =
+  val ChildSegmentError: NsiError =
     NsiError("00502", "CHILD_SEGMENT_ERROR", "Child connection segment error is present")
 
-  val MessageDeliveryError =
+  val MessageDeliveryError: NsiError =
     NsiError("00503", "MESSAGE_DELIVERY_ERROR", "Failed message delivery to peer NSA")
 
-  val GenericResourceUnavailable =
+  val GenericResourceUnavailable: NsiError =
     NsiError("00600", "GENERIC_RESOURCE_UNAVAILABLE", "A requested resource is not available")
 
   @deprecated(message = "use GenericResourceUnavailable", since = "NSI CS 2.1")
   val ResourceUnavailable = GenericResourceUnavailable
 
-  val GenericServiceError = NsiError(
+  val GenericServiceError: NsiError = NsiError(
     "00700",
     "GENERIC_SERVICE_ERROR",
     "Reserved for service specific errors as defined by serviceType and the corresponding service definition"
   )
 
   // NSI-CS point-to-point service-specific errors
-  val UnknownStp = NsiError("00701", "UNKNOWN_STP", "Could not find STP in topology database")
+  val UnknownStp: NsiError =
+    NsiError("00701", "UNKNOWN_STP", "Could not find STP in topology database")
 
-  val LabelSwappingNotSupported = NsiError(
+  val LabelSwappingNotSupported: NsiError = NsiError(
     "00703",
     "LABEL_SWAPPING_NOT_SUPPORTED",
     "Label swapping is not supported for requested path"
   )
 
-  val StpUnavailable = NsiError("00704", "STP_UNAVAILABLE", "Specified STP already in use")
+  val StpUnavailable: NsiError =
+    NsiError("00704", "STP_UNAVAILABLE", "Specified STP already in use")
 
-  val CAPACITY_UNAVAILABLE =
+  val CAPACITY_UNAVAILABLE: NsiError =
     NsiError("00705", "CAPACITY_UNAVAILABLE", "Insufficient capacity available for reservation")
 
-  def CapacityUnavailable(capacity: Long) =
+  def CapacityUnavailable(capacity: Long): NsiError =
     CAPACITY_UNAVAILABLE.withVariables(NsiOperation.CAPACITY -> capacity.toString)
 
-  val DirectionalityMismatch = NsiError(
+  val DirectionalityMismatch: NsiError = NsiError(
     "00706",
     "DIRECTIONALITY_MISMATCH",
     "Directionality of specified STP does not match requested directionality"
   )
 
-  val InvalidEroMember = NsiError("00707", "INVALID_ERO_MEMBER", "Invalid ERO member")
+  val InvalidEroMember: NsiError = NsiError("00707", "INVALID_ERO_MEMBER", "Invalid ERO member")
 
-  val UnknownLabelType =
+  val UnknownLabelType: NsiError =
     NsiError("00708", "UNKNOWN_LABEL_TYPE", "Specified STP contains an unknown label type")
 
-  val InvalidLabelFormat =
+  val InvalidLabelFormat: NsiError =
     NsiError("00709", "InvalidLabelFormat", "Specified STP contains an invalid label")
 
-  val NoTransportPlanePathFound = NsiError(
+  val NoTransportPlanePathFound: NsiError = NsiError(
     "00710",
     "NO_TRANSPORTPLANE_PATH_FOUND",
     "Path computation failed to resolve route for reservation"
   )
 
-  val GenericRmError = NsiError(
+  val GenericRmError: NsiError = NsiError(
     "00800",
     "GENERIC_RM_ERROR",
     "An internal (N)RM error has caused a message processing failure"

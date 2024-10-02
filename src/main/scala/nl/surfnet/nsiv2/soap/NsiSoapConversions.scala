@@ -36,15 +36,15 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
-import nl.surfnet.nsiv2.messages._
-import nl.surfnet.nsiv2.utils._
-import org.ogf.schemas.nsi._2013._12.connection.types._
+import nl.surfnet.nsiv2.messages.*
+import nl.surfnet.nsiv2.utils.*
+import org.ogf.schemas.nsi._2013._12.connection.types.*
 import org.ogf.schemas.nsi._2013._12.framework.headers.CommonHeaderType
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import org.w3c.dom.{Document, Element}
 import org.xml.sax.helpers.DefaultHandler
 import org.xml.sax.SAXParseException
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -60,7 +60,7 @@ object NsiSoapConversions {
       Try(ByteString(string, "UTF-8"))
     }
 
-  val NsiXmlDocumentConversion = XmlDocumentConversion(
+  val NsiXmlDocumentConversion: Conversion[Document, ByteString] = XmlDocumentConversion(
     new nl.surfnet.bod.nsi.Validation(nl.surfnet.bod.nsi.Validation.NSI_SCHEMAS).getSchema()
   )
 
@@ -123,7 +123,7 @@ object NsiSoapConversions {
     })
     .andThen(NsiHeadersAndBodyToDocument[T](bodyConversion))
 
-  private def marshal[T](jaxb: JAXBElement[T]): Try[Element] = Try {
+  private def marshal(jaxb: JAXBElement[?]): Try[Element] = Try {
     val result = new DOMResult()
     jaxbContext.createMarshaller().marshal(jaxb, result)
     result.getNode().asInstanceOf[Document].getDocumentElement()
@@ -246,36 +246,36 @@ object NsiSoapConversions {
           typesFactory.createQueryNotification(
             new QueryNotificationType()
               .withConnectionId(connectionId)
-              .withStartNotificationId(if (start.isDefined) start.get else null)
-              .withEndNotificationId(if (end.isDefined) end.get else null)
+              .withStartNotificationId(if start.isDefined then start.get else null)
+              .withEndNotificationId(if end.isDefined then end.get else null)
           )
         case QueryNotificationSync(connectionId, start, end) =>
           typesFactory.createQueryNotificationSync(
             new QueryNotificationType()
               .withConnectionId(connectionId)
-              .withStartNotificationId(if (start.isDefined) start.get else null)
-              .withEndNotificationId(if (end.isDefined) end.get else null)
+              .withStartNotificationId(if start.isDefined then start.get else null)
+              .withEndNotificationId(if end.isDefined then end.get else null)
           )
         case QueryResult(connectionId, start, end) =>
           typesFactory.createQueryResult(
             new QueryResultType()
               .withConnectionId(connectionId)
-              .withStartResultId(if (start.isDefined) start.get else null)
-              .withEndResultId(if (end.isDefined) end.get else null)
+              .withStartResultId(if start.isDefined then start.get else null)
+              .withEndResultId(if end.isDefined then end.get else null)
           )
         case QueryResultSync(connectionId, start, end) =>
           typesFactory.createQueryResultSync(
             new QueryResultType()
               .withConnectionId(connectionId)
-              .withStartResultId(if (start.isDefined) start.get else null)
-              .withEndResultId(if (end.isDefined) end.get else null)
+              .withStartResultId(if start.isDefined then start.get else null)
+              .withEndResultId(if end.isDefined then end.get else null)
           )
       })
     } {
       messageFactories(
         Map[String, NsiMessageParser[NsiProviderOperation]](
           "reserve" -> NsiMessageParser { (body: ReserveType) =>
-            if (body.getConnectionId eq null) {
+            if body.getConnectionId eq null then {
               for {
                 _ <- body.getCriteria.pointToPointService
                   .toTry("initial reserve is missing point2point service")
@@ -351,12 +351,10 @@ object NsiSoapConversions {
     }
 
   private def toIds(query: QueryType): Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]] =
-    if (!query.getConnectionId().isEmpty())
-      Some(Left(query.getConnectionId().asScala.toSeq))
-    else if (!query.getGlobalReservationId().isEmpty)
+    if !query.getConnectionId().isEmpty() then Some(Left(query.getConnectionId().asScala.toSeq))
+    else if !query.getGlobalReservationId().isEmpty then
       Some(Right(query.getGlobalReservationId().asScala.toSeq.map(URI.create)))
-    else
-      None
+    else None
 
   private def toIfModifiedSince(query: QueryType): Option[XMLGregorianCalendar] = Option(
     query.getIfModifiedSince
@@ -590,7 +588,7 @@ object NsiSoapConversions {
     }
   }
 
-  val jaxbContext = JAXBContext.newInstance(SchemaPackages.mkString(":"))
+  val jaxbContext: JAXBContext = JAXBContext.newInstance(SchemaPackages.mkString(":"))
 
   private implicit val NsiHeadersToElement: Conversion[NsiHeaders, Element] =
     Conversion.build[NsiHeaders, Element] { headers =>

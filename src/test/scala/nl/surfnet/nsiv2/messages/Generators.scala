@@ -5,7 +5,7 @@ import java.time.Instant
 import javax.xml.datatype.XMLGregorianCalendar
 import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 import nl.surfnet.bod.nsi.Nillable
-import nl.surfnet.nsiv2.utils._
+import nl.surfnet.nsiv2.utils.*
 import oasis.names.tc.saml._2_0.assertion.AttributeType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
@@ -21,7 +21,7 @@ import org.scalacheck.Gen
 object Generators {
 
   implicit val ArbitraryInstant: Arbitrary[Instant] = Arbitrary(for {
-    timeInMillis <- Gen.choose(0, System.currentTimeMillis() * 3)
+    timeInMillis <- Gen.choose(0L, System.currentTimeMillis() * 3)
   } yield Instant.ofEpochMilli(timeInMillis))
 
   implicit val ArbitraryCorrelationId: Arbitrary[CorrelationId] = Arbitrary(for {

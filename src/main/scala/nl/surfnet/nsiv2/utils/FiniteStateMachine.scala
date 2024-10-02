@@ -39,7 +39,7 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
     nextState map { nextState =>
       _nextStateName = nextState.name
       _nextStateData = nextState.data
-      val output = if (_transitionHandler.isDefinedAt((_stateName, _nextStateName))) {
+      val output = if _transitionHandler.isDefinedAt((_stateName, _nextStateName)) then {
         logger.debug(
           s"state change from ${_stateName} to ${_nextStateName} with defined transition handler"
         )
@@ -53,13 +53,14 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
     }
   }
 
-  override def toString = s"${super.toString}(stateName = $stateName, stateData = $stateData)"
+  override def toString: String =
+    s"${super.toString}(stateName = $stateName, stateData = $stateData)"
 
   /** This captures all of the managed state of the state machine: the state name, the state data,
     * and replies accumulated while processing the last message.
     */
   protected[this] case class State(name: S, data: D) {
-    def using(nextData: D) = copy(data = nextData)
+    def using(nextData: D): State = copy(data = nextData)
   }
   protected[this] case class Event(message: I, data: D)
 
@@ -90,7 +91,7 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
     require(_handlers contains stateName, s"cannot goto $stateName: state does not exist")
     State(stateName, stateData)
   }
-  protected[this] def stay = goto(stateName)
+  protected[this] def stay: State = goto(stateName)
 
   /** This extractor is just convenience for matching a (S, S) pair, including a reminder what the
     * new state is.

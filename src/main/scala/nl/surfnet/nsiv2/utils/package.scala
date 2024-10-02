@@ -23,11 +23,11 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
-import java.time._
+import java.time.*
 import java.util.GregorianCalendar
 import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import nl.surfnet.bod.nsi.Nillable
-import nl.surfnet.nsiv2.messages._
+import nl.surfnet.nsiv2.messages.*
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +35,7 @@ package object utils {
   def classpathResourceUri(name: String): URI = {
     val classLoader = Thread.currentThread().getContextClassLoader
     val resource = classLoader.getResource(name)
-    if (resource != null) resource.toURI
+    if resource ne null then resource.toURI
     else throw new IllegalArgumentException(f"classpath resource '$name' not found")
   }
 
@@ -69,16 +69,17 @@ package object utils {
     def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
   }
 
-  val utc = ZoneId.of("Z")
+  val utc: ZoneId = ZoneId.of("Z")
 
   implicit class InstantOps(instant: java.time.Instant) {
     def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
 
-    def toXMLFormat(zoneId: ZoneId = utc) = toXMLGregorianCalendar(zoneId).toXMLFormat
+    def toXMLFormat(zoneId: ZoneId = utc): String = toXMLGregorianCalendar(zoneId).toXMLFormat
 
-    def toZonedDateTime(zoneId: ZoneId = utc) = ZonedDateTime.ofInstant(instant, zoneId)
+    def toZonedDateTime(zoneId: ZoneId = utc): ZonedDateTime =
+      ZonedDateTime.ofInstant(instant, zoneId)
 
-    def toXMLGregorianCalendar(zoneId: ZoneId = utc) = {
+    def toXMLGregorianCalendar(zoneId: ZoneId = utc): XMLGregorianCalendar = {
       val cal = GregorianCalendar.from(instant.toZonedDateTime(zoneId))
       DatatypeFactory.newInstance.newXMLGregorianCalendar(cal)
     }
@@ -90,10 +91,10 @@ package object utils {
     }
     private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
 
-    def map2[A](f: T => A) = nillable map asJavaFunction1(f)
-    def fold2[A](p: T => A, a: => A, n: => A) =
+    def map2[A](f: T => A): Nillable[A] = nillable map asJavaFunction1(f)
+    def fold2[A](p: T => A, a: => A, n: => A): A =
       nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
-    def orElse2(f: => Nillable[T]) = nillable orElse asJavaSupplier(f)
+    def orElse2(f: => Nillable[T]): Nillable[T] = nillable orElse asJavaSupplier(f)
     def toOption(nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
   }
 

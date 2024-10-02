@@ -5,6 +5,8 @@ organization := "nl.surfnet"
 scalaVersion := "2.13.14"
 
 scalacOptions ++= Seq(
+  "-Xsource:3",
+  "-Xsource-features:case-apply-copy-access",
   "-deprecation",
   "-feature",
   "-unchecked",

@@ -26,7 +26,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       .map(VlanRange.apply)
   )
 
-  private def beCompatibleWith(target: Stp): Matcher[Stp] = { source: Stp =>
+  private def beCompatibleWith(target: Stp): Matcher[Stp] = { (source: Stp) =>
     (
       source isCompatibleWith target,
       s"$source is compatible with $target",
@@ -35,7 +35,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
   }
 
   "VlanRange" should {
-    "print and parse" in prop { vlanRange: VlanRange =>
+    "print and parse" in prop { (vlanRange: VlanRange) =>
       VlanRange.fromString(vlanRange.toString) must beSome(vlanRange)
     }
 
@@ -97,7 +97,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       Stp.fromString(Stp("id?ent").toString) must beSome(Stp("id?ent"))
     }
 
-    "parse any stringified STP" in prop { stp: Stp =>
+    "parse any stringified STP" in prop { (stp: Stp) =>
       Stp.fromString(stp.toString) must beSome(stp)
     }
   }

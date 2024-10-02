@@ -286,31 +286,31 @@ object NsiSoapConversions {
               Success(ModifyReserve(body))
             }
           },
-          "reserveCommit" -> NsiMessageParser { body: GenericRequestType =>
+          "reserveCommit" -> NsiMessageParser { (body: GenericRequestType) =>
             Success(ReserveCommit(body.getConnectionId()))
           },
-          "reserveAbort" -> NsiMessageParser { body: GenericRequestType =>
+          "reserveAbort" -> NsiMessageParser { (body: GenericRequestType) =>
             Success(ReserveAbort(body.getConnectionId()))
           },
-          "provision" -> NsiMessageParser { body: GenericRequestType =>
+          "provision" -> NsiMessageParser { (body: GenericRequestType) =>
             Success(Provision(body.getConnectionId()))
           },
-          "release" -> NsiMessageParser { body: GenericRequestType =>
+          "release" -> NsiMessageParser { (body: GenericRequestType) =>
             Success(Release(body.getConnectionId()))
           },
-          "terminate" -> NsiMessageParser { body: GenericRequestType =>
+          "terminate" -> NsiMessageParser { (body: GenericRequestType) =>
             Success(Terminate(body.getConnectionId()))
           },
-          "querySummary" -> NsiMessageParser { body: QueryType =>
+          "querySummary" -> NsiMessageParser { (body: QueryType) =>
             Success(QuerySummary(toIds(body), toIfModifiedSince(body)))
           },
-          "querySummarySync" -> NsiMessageParser { body: QueryType =>
+          "querySummarySync" -> NsiMessageParser { (body: QueryType) =>
             Success(QuerySummarySync(toIds(body), toIfModifiedSince(body)))
           },
-          "queryRecursive" -> NsiMessageParser { body: QueryType =>
+          "queryRecursive" -> NsiMessageParser { (body: QueryType) =>
             Success(QueryRecursive(toIds(body), toIfModifiedSince(body)))
           },
-          "queryNotification" -> NsiMessageParser { body: QueryNotificationType =>
+          "queryNotification" -> NsiMessageParser { (body: QueryNotificationType) =>
             Success(
               QueryNotification(
                 body.getConnectionId(),
@@ -319,7 +319,7 @@ object NsiSoapConversions {
               )
             )
           },
-          "queryNotificationSync" -> NsiMessageParser { body: QueryNotificationType =>
+          "queryNotificationSync" -> NsiMessageParser { (body: QueryNotificationType) =>
             Success(
               QueryNotificationSync(
                 body.getConnectionId(),
@@ -328,7 +328,7 @@ object NsiSoapConversions {
               )
             )
           },
-          "queryResult" -> NsiMessageParser { body: QueryResultType =>
+          "queryResult" -> NsiMessageParser { (body: QueryResultType) =>
             Success(
               QueryResult(
                 body.getConnectionId(),
@@ -337,7 +337,7 @@ object NsiSoapConversions {
               )
             )
           },
-          "queryResultSync" -> NsiMessageParser { body: QueryResultType =>
+          "queryResultSync" -> NsiMessageParser { (body: QueryResultType) =>
             Success(
               QueryResultSync(
                 body.getConnectionId(),
@@ -556,8 +556,8 @@ object NsiSoapConversions {
 
   private def XmlDocumentConversion(schema: Schema): Conversion[Document, ByteString] = {
     val errorHandler = new DefaultHandler() {
-      override def error(e: SAXParseException) = throw e
-      override def fatalError(e: SAXParseException) = throw e
+      override def error(e: SAXParseException): Nothing = throw e
+      override def fatalError(e: SAXParseException): Nothing = throw e
     }
 
     Conversion.build[Document, ByteString] { document =>

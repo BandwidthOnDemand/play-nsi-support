@@ -74,7 +74,7 @@ object XmlAny {
   def apply(elements: Seq[AnyRef]): XmlAny = new XmlAny(elements.toList)
   def unapply(any: XmlAny): Option[List[AnyRef]] = Some(any.elements)
 
-  case class Element[T] private (name: QName, nil: Boolean, value: T)
+  case class Element[T] private[XmlAny] (name: QName, nil: Boolean, value: T)
   object Element {
     def unapply(any: Any): Option[(QName, Option[Any])] = any match {
       case element: JAXBElement[_] =>

@@ -34,7 +34,7 @@ trait Conversion[A, B] { outer =>
     override def apply(a: A): Try[C] = outer.apply(a).flatMap(that.apply)
     override val invert: Conversion[C, A] = new Conversion[C, A] {
       override def apply(c: C): Try[A] = that.invert.apply(c).flatMap(outer.invert.apply)
-      override val invert = inner
+      override val invert: Conversion[A, C] = inner
     }
   }
 }
@@ -44,9 +44,9 @@ object Conversion {
   def build[A, B](to: A => Try[B])(from: B => Try[A]): Conversion[A, B] = new Conversion[A, B] {
     outer =>
     override def apply(a: A) = Try(to(a)).flatten
-    override val invert = new Conversion[B, A] {
+    override val invert: Conversion[B, A] = new Conversion[B, A] {
       override def apply(b: B) = Try(from(b)).flatten
-      override val invert = outer
+      override val invert: Conversion[A, B] = outer
     }
   }
 

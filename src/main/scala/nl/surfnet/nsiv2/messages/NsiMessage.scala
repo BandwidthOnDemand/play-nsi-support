@@ -41,7 +41,8 @@ object NsiHeaders {
   val REQUESTER_NSA = new QName(QNAME_NSI_HEADERS.getNamespaceURI, "requesterNSA")
 
   private val gnsFactory = new net.nordu.namespaces._2013._12.gnsbod.ObjectFactory()
-  private val pathTraceFactory = new org.ogf.schemas.nsi._2015._04.connection.pathtrace.ObjectFactory()
+  private val pathTraceFactory =
+    new org.ogf.schemas.nsi._2015._04.connection.pathtrace.ObjectFactory()
 
   private val NullConnectionTraceElement = gnsFactory.createConnectionTrace(null)
   private val NullPathTraceElement = pathTraceFactory.createPathTrace(null)
@@ -56,7 +57,8 @@ case class NsiHeaders(
     any: XmlAny = XmlAny.empty,
     otherAttributes: Map[QName, String] = Map.empty
 ) {
-  def forSyncAck: NsiHeaders = NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
+  def forSyncAck: NsiHeaders =
+    NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
 
   def forAsyncReply: NsiHeaders = NsiHeaders(
     correlationId,
@@ -66,12 +68,19 @@ case class NsiHeaders(
     NsiHeaders.RequesterProtocolVersion
   )
 
-  def connectionTrace: List[ConnectionType] = any.findFirst(NsiHeaders.NullConnectionTraceElement).map(_.getConnection.asScala.toList) getOrElse Nil
+  def connectionTrace: List[ConnectionType] =
+    any
+      .findFirst(NsiHeaders.NullConnectionTraceElement)
+      .map(_.getConnection.asScala.toList) getOrElse Nil
 
   def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any = if (trace.isEmpty) {
     any.remove(NsiHeaders.NullConnectionTraceElement)
   } else {
-    any.update(NsiHeaders.gnsFactory.createConnectionTrace(new ConnectionTraceType().withConnection(trace.asJava)))
+    any.update(
+      NsiHeaders.gnsFactory.createConnectionTrace(
+        new ConnectionTraceType().withConnection(trace.asJava)
+      )
+    )
   })
 
   def addConnectionTrace(value: String): NsiHeaders = {
@@ -83,7 +92,8 @@ case class NsiHeaders(
 
   def pathTrace: Option[PathTraceType] = any.findFirst(NsiHeaders.NullPathTraceElement)
 
-  def withPathTrace(pathTrace: PathTraceType): NsiHeaders = copy(any = any.update(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace)))
+  def withPathTrace(pathTrace: PathTraceType): NsiHeaders =
+    copy(any = any.update(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace)))
 }
 
 trait NsiOperation
@@ -105,32 +115,55 @@ sealed trait NsiMessage[+T <: NsiOperation] {
 }
 
 final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, body: T) extends NsiMessage[T] {
-  def ack[U <: NsiAcknowledgement](acknowledgement: U = GenericAck()): NsiProviderMessage[U] = ack(headers, acknowledgement)
+  def ack[U <: NsiAcknowledgement](acknowledgement: U = GenericAck()): NsiProviderMessage[U] =
+    ack(headers, acknowledgement)
 
-  def ackWithCorrectedProviderNsa(providerNsa: String, acknowledgement: NsiAcknowledgement = GenericAck()): NsiProviderMessage[NsiAcknowledgement] =
+  def ackWithCorrectedProviderNsa(
+      providerNsa: String,
+      acknowledgement: NsiAcknowledgement = GenericAck()
+  ): NsiProviderMessage[NsiAcknowledgement] =
     ack(headers.copy(providerNSA = providerNsa), acknowledgement)
 
   private def ack[U <: NsiAcknowledgement](ackHeaders: NsiHeaders, ack: U) =
-    NsiProviderMessage(ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.ProviderProtocolVersion), ack)
+    NsiProviderMessage(
+      ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.ProviderProtocolVersion),
+      ack
+    )
 
   def reply(reply: NsiRequesterOperation) = NsiRequesterMessage(headers.forAsyncReply, reply)
 }
 
 final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, body: T) extends NsiMessage[T] {
-  def ack(acknowledgement: NsiAcknowledgement = GenericAck()): NsiRequesterMessage[NsiAcknowledgement] = ack(headers, acknowledgement)
+  def ack(
+      acknowledgement: NsiAcknowledgement = GenericAck()
+  ): NsiRequesterMessage[NsiAcknowledgement] =
+    ack(headers, acknowledgement)
 
-  def ackWithCorrectedRequesterNsa(requesterNsa: String, acknowledgement: NsiAcknowledgement = GenericAck()): NsiRequesterMessage[NsiAcknowledgement] =
+  def ackWithCorrectedRequesterNsa(
+      requesterNsa: String,
+      acknowledgement: NsiAcknowledgement = GenericAck()
+  ): NsiRequesterMessage[NsiAcknowledgement] =
     ack(headers.copy(requesterNSA = requesterNsa), acknowledgement)
 
   private def ack(ackHeaders: NsiHeaders, ack: NsiAcknowledgement) =
-    NsiRequesterMessage(ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.RequesterProtocolVersion), ack)
+    NsiRequesterMessage(
+      ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.RequesterProtocolVersion),
+      ack
+    )
 }
 
-final case class NsiError(id: String, description: String, text: String, variables: Seq[(QName, String)]) {
+final case class NsiError(
+    id: String,
+    description: String,
+    text: String,
+    variables: Seq[(QName, String)]
+) {
   override def toString = s"$id: $description: $text"
 
   def toServiceException(nsaId: String, args: (QName, String)*) = {
-    val variables = (this.variables ++ args) map { case (t, v) => new TypeValuePairType().withNamespace(t.getNamespaceURI).withType(t.getLocalPart).withValue(v) }
+    val variables = (this.variables ++ args) map { case (t, v) =>
+      new TypeValuePairType().withNamespace(t.getNamespaceURI).withType(t.getLocalPart).withValue(v)
+    }
 
     new ServiceExceptionType()
       .withErrorId(id)

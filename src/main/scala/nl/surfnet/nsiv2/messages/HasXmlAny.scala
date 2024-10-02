@@ -24,7 +24,12 @@ package nl.surfnet.nsiv2.messages
 
 import jakarta.xml.bind.JAXBElement
 import javax.xml.namespace.QName
-import org.ogf.schemas.nsi._2013._12.connection.types.{ChildSummaryType, QuerySummaryResultCriteriaType, ReservationConfirmCriteriaType, ReservationRequestCriteriaType}
+import org.ogf.schemas.nsi._2013._12.connection.types.{
+  ChildSummaryType,
+  QuerySummaryResultCriteriaType,
+  ReservationConfirmCriteriaType,
+  ReservationRequestCriteriaType
+}
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
@@ -36,10 +41,8 @@ import scala.reflect.ClassTag
 class XmlAny private (val elements: List[AnyRef]) {
 
   override def equals(obj: Any): Boolean = obj match {
-    case that: XmlAny =>
-      unwrapJaxbElements(this.elements) == unwrapJaxbElements(that.elements)
-    case _ =>
-      false
+    case that: XmlAny => unwrapJaxbElements(this.elements) == unwrapJaxbElements(that.elements)
+    case _            => false
   }
 
   override def hashCode(): Int = unwrapJaxbElements(elements).##
@@ -55,10 +58,8 @@ class XmlAny private (val elements: List[AnyRef]) {
   }
 
   def remove(nullElement: JAXBElement[_]): XmlAny = XmlAny(elements filter {
-    case element: JAXBElement[_] if element.getName() == nullElement.getName =>
-      false
-    case _ =>
-      true
+    case element: JAXBElement[_] if element.getName() == nullElement.getName => false
+    case _                                                                   => true
   })
 
   def update(element: JAXBElement[_]): XmlAny = XmlAny(element :: remove(element).elements)
@@ -99,14 +100,15 @@ trait HasXmlAny[A] {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
   }
 
-  def removeAny(a: A, nullElement: JAXBElement[_]): Boolean = getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
-    override def test(any: AnyRef): Boolean = any match {
-      case element: JAXBElement[_] if element.getName() == nullElement.getName =>
-        true
-      case _ =>
-        false
-    }
-  })
+  def removeAny(a: A, nullElement: JAXBElement[_]): Boolean =
+    getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
+      override def test(any: AnyRef): Boolean = any match {
+        case element: JAXBElement[_] if element.getName() == nullElement.getName =>
+          true
+        case _ =>
+          false
+      }
+    })
 
   def updateAny(a: A, element: JAXBElement[_]): Unit = {
     removeAny(a, element)

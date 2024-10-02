@@ -4,7 +4,15 @@ organization := "nl.surfnet"
 
 scalaVersion := "2.13.14"
 
-scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlint", "-Ywarn-unused", "-Ywarn-value-discard", "-release:21")
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-feature",
+  "-unchecked",
+  "-Xlint",
+  "-Ywarn-unused",
+  "-Ywarn-value-discard",
+  "-release:21"
+)
 
 Test / publishArtifact := true
 

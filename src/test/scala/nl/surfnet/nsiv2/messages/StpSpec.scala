@@ -21,10 +21,17 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
   } yield Stp(identifier, SortedMap(labels: _*)))
 
   private implicit val ArbitraryVlanRange: Arbitrary[VlanRange] = Arbitrary(
-    Gen.nonEmptyListOf(for (a <- GenVlanId; b <- GenVlanId) yield Range.closed(a min b, a max b)).map(VlanRange.apply))
+    Gen
+      .nonEmptyListOf(for (a <- GenVlanId; b <- GenVlanId) yield Range.closed(a min b, a max b))
+      .map(VlanRange.apply)
+  )
 
   private def beCompatibleWith(target: Stp): Matcher[Stp] = { source: Stp =>
-    (source isCompatibleWith target, s"$source is compatible with $target", s"$source is not compatible with $target")
+    (
+      source isCompatibleWith target,
+      s"$source is compatible with $target",
+      s"$source is not compatible with $target"
+    )
   }
 
   "VlanRange" should {
@@ -53,16 +60,37 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       Stp.fromString("identifer?=foo") must beNone
     }
     "parse without label" in {
-      Stp.fromString("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4") must beSome(Stp("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4"))
+      Stp.fromString("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4") must beSome(
+        Stp("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4")
+      )
     }
     "parse with labelType" in {
-      Stp.fromString("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4?vlan") must beSome(Stp("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4", SortedMap("vlan" -> None)))
+      Stp.fromString(
+        "urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4?vlan"
+      ) must beSome(
+        Stp(
+          "urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4",
+          SortedMap("vlan" -> None)
+        )
+      )
     }
     "parse with labelType and labelValue" in {
-      Stp.fromString("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4?vlan=2-1000") must beSome(Stp("urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4", SortedMap("vlan" -> Some("2-1000"))))
+      Stp.fromString(
+        "urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4?vlan=2-1000"
+      ) must beSome(
+        Stp(
+          "urn:ogf:network:surfnet.nl:1990:testbed:00:03:18:c3:1e:00-9-4",
+          SortedMap("vlan" -> Some("2-1000"))
+        )
+      )
     }
     "parse with multiple labels" in {
-      Stp.fromString("identifier?vlan=1-200&protected&s-vlan=1-1000") must beSome(Stp("identifier", SortedMap("vlan" -> Some("1-200"), "protected" -> None, "s-vlan" -> Some("1-1000"))))
+      Stp.fromString("identifier?vlan=1-200&protected&s-vlan=1-1000") must beSome(
+        Stp(
+          "identifier",
+          SortedMap("vlan" -> Some("1-200"), "protected" -> None, "s-vlan" -> Some("1-1000"))
+        )
+      )
     }
 
     "parse with embedded question mark" in {
@@ -92,7 +120,9 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
     }
 
     "not be compatible with STP that has non-containing VLAN range" in {
-      stp("urn:ogf:network:a?vlan=10") must not(beCompatibleWith(stp("urn:ogf:network:a?vlan=20-30")))
+      stp("urn:ogf:network:a?vlan=10") must not(
+        beCompatibleWith(stp("urn:ogf:network:a?vlan=20-30"))
+      )
     }
 
     "be compatible with STP that has containing VLAN range" in {
@@ -112,15 +142,21 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
     }
 
     "not be compatible with C-VLAN STP" in {
-      stp("urn:ogf:network:a?s-vlan=10") must not(beCompatibleWith(stp("urn:ogf:network:a?vlan=10")))
+      stp("urn:ogf:network:a?s-vlan=10") must not(
+        beCompatibleWith(stp("urn:ogf:network:a?vlan=10"))
+      )
     }
 
     "not be compatible with STP that has non-containing S-VLAN range" in {
-      stp("urn:ogf:network:a?s-vlan=10") must not(beCompatibleWith(stp("urn:ogf:network:a?s-vlan=20-30")))
+      stp("urn:ogf:network:a?s-vlan=10") must not(
+        beCompatibleWith(stp("urn:ogf:network:a?s-vlan=20-30"))
+      )
     }
 
     "be compatible with STP that has containing VLAN range" in {
-      stp("urn:ogf:network:a?s-vlan=10") must beCompatibleWith(stp("urn:ogf:network:a?s-vlan=10-30"))
+      stp("urn:ogf:network:a?s-vlan=10") must beCompatibleWith(
+        stp("urn:ogf:network:a?s-vlan=10-30")
+      )
     }
   }
 }

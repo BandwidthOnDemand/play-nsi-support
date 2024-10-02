@@ -52,7 +52,8 @@ case class InitialReserve(body: ReserveType) extends Reserve {
   override def optionalConnectionId: Option[ConnectionId] = None
 
   def criteria: ReservationRequestCriteriaType = body.getCriteria
-  def service: Option[P2PServiceBaseType] = criteria.any.findFirst(InitialReserve.NULL_P2PS_SERVICE_BASE_TYPE)
+  def service: Option[P2PServiceBaseType] =
+    criteria.any.findFirst(InitialReserve.NULL_P2PS_SERVICE_BASE_TYPE)
 
   require(body.getConnectionId eq null, "initial reserve must not have connectionId")
 }
@@ -65,7 +66,8 @@ case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpda
   def criteria: ReservationRequestCriteriaType = body.getCriteria
 
   def schedule: Option[ScheduleType] = Option(criteria.getSchedule)
-  def capacity: Option[Long] = criteria.any.findFirst(ModifyReserve.NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
+  def capacity: Option[Long] =
+    criteria.any.findFirst(ModifyReserve.NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
   def parameters: Seq[TypeValueType] = criteria.any.find(ModifyReserve.NULL_PARAMETER_P2PS_ELEMENT)
 
   require(connectionId ne null, "modify must have connectionId")
@@ -83,12 +85,25 @@ case class Release(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 
 case class Terminate(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 
-case class QuerySummary(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
-case class QuerySummarySync(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
-case class QueryRecursive(ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]], ifModifiedSince: Option[XMLGregorianCalendar]) extends NsiProviderQuery
+case class QuerySummary(
+    ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]],
+    ifModifiedSince: Option[XMLGregorianCalendar]
+) extends NsiProviderQuery
+case class QuerySummarySync(
+    ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]],
+    ifModifiedSince: Option[XMLGregorianCalendar]
+) extends NsiProviderQuery
+case class QueryRecursive(
+    ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]],
+    ifModifiedSince: Option[XMLGregorianCalendar]
+) extends NsiProviderQuery
 
-case class QueryNotification(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
-case class QueryNotificationSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
+case class QueryNotification(connectionId: ConnectionId, start: Option[Long], end: Option[Long])
+    extends NsiProviderQuery
+case class QueryNotificationSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long])
+    extends NsiProviderQuery
 
-case class QueryResult(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
-case class QueryResultSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long]) extends NsiProviderQuery
+case class QueryResult(connectionId: ConnectionId, start: Option[Long], end: Option[Long])
+    extends NsiProviderQuery
+case class QueryResultSync(connectionId: ConnectionId, start: Option[Long], end: Option[Long])
+    extends NsiProviderQuery

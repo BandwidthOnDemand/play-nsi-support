@@ -33,11 +33,11 @@ import org.ogf.schemas.nsi._2013._12.connection.types.{
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
-/**
- * Wraps an JAXB XML any list and tries to correctly implement equals and hashCode for data wrapped in JAXBElement[_].
- *
- * Also provides utility methods for manipulating the XML elements.
- */
+/** Wraps an JAXB XML any list and tries to correctly implement equals and hashCode for data wrapped
+  * in JAXBElement[_].
+  *
+  * Also provides utility methods for manipulating the XML elements.
+  */
 class XmlAny private (val elements: List[AnyRef]) {
 
   override def equals(obj: Any): Boolean = obj match {
@@ -85,9 +85,8 @@ object XmlAny {
   }
 }
 
-/**
- * Type class for JAXB generated types that have an XML any element.
- */
+/** Type class for JAXB generated types that have an XML any element.
+  */
 trait HasXmlAny[A] {
   def getAny(a: A): java.util.List[AnyRef]
   def any(a: A): XmlAny = XmlAny(getAny(a).asScala.toList)
@@ -96,9 +95,10 @@ trait HasXmlAny[A] {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
   }.toList
 
-  def findFirstAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): Option[T] = getAny(a).asScala collectFirst {
-    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
-  }
+  def findFirstAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): Option[T] =
+    getAny(a).asScala collectFirst {
+      case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
+    }
 
   def removeAny(a: A, nullElement: JAXBElement[_]): Boolean =
     getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
@@ -124,7 +124,10 @@ object HasXmlAny {
   }
 
   implicit val ChildSummaryType: HasXmlAny[ChildSummaryType] = build(_.getAny)
-  implicit val QuerySummaryResultCriteriaType: HasXmlAny[QuerySummaryResultCriteriaType] = build(_.getAny)
-  implicit val ReservationConfirmCriteriaType: HasXmlAny[ReservationConfirmCriteriaType] = build(_.getAny)
-  implicit val ReservationRequestCriteriaType: HasXmlAny[ReservationRequestCriteriaType] = build(_.getAny)
+  implicit val QuerySummaryResultCriteriaType: HasXmlAny[QuerySummaryResultCriteriaType] =
+    build(_.getAny)
+  implicit val ReservationConfirmCriteriaType: HasXmlAny[ReservationConfirmCriteriaType] =
+    build(_.getAny)
+  implicit val ReservationRequestCriteriaType: HasXmlAny[ReservationRequestCriteriaType] =
+    build(_.getAny)
 }

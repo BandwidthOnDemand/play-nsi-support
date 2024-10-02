@@ -22,9 +22,8 @@
  */
 package nl.surfnet.nsiv2.messages
 
-/**
- * SURFnet specific connection protection type.
- */
+/** SURFnet specific connection protection type.
+  */
 sealed trait ProtectionType
 object ProtectionType {
   case object PROTECTED extends ProtectionType

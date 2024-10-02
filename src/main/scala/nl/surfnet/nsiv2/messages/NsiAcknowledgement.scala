@@ -36,6 +36,8 @@ case class QuerySummarySyncConfirmed(
     results: Seq[QuerySummaryResultType],
     lastModified: Option[XMLGregorianCalendar]
 ) extends NsiAcknowledgement
-case class QueryNotificationSyncConfirmed(results: Seq[NotificationBaseType]) extends NsiAcknowledgement
-case class QueryResultSyncConfirmed(results: Seq[QueryResultResponseType]) extends NsiAcknowledgement
+case class QueryNotificationSyncConfirmed(results: Seq[NotificationBaseType])
+    extends NsiAcknowledgement
+case class QueryResultSyncConfirmed(results: Seq[QueryResultResponseType])
+    extends NsiAcknowledgement
 case class ErrorAck(error: GenericErrorType) extends NsiAcknowledgement

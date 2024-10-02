@@ -11,7 +11,9 @@ import play.api.test._
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.soap.Conversion
 
-abstract class MessageStoreSpecification extends org.specs2.mutable.Specification with org.specs2.ScalaCheck {
+abstract class MessageStoreSpecification
+    extends org.specs2.mutable.Specification
+    with org.specs2.ScalaCheck {
   sequential
 
   private def newConnectionId = UUID.randomUUID.toString
@@ -45,7 +47,12 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
       prop { (message: Message) =>
         val unknownConnectionId = newConnectionId
 
-        messageStore.storeInboundWithOutboundMessages(unknownConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
+        messageStore.storeInboundWithOutboundMessages(
+          unknownConnectionId,
+          timestamp,
+          message,
+          Seq.empty
+        ) must throwA[IllegalArgumentException]
       }.set(minTestsOk = 1)
     }
 
@@ -53,13 +60,23 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
       prop { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 
-        messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must throwA[IllegalArgumentException]
+        messageStore.storeInboundWithOutboundMessages(
+          aggregatedConnectionId,
+          timestamp,
+          message,
+          Seq.empty
+        ) must throwA[IllegalArgumentException]
       }.set(minTestsOk = 1)
     }
 
     "append new messages at the end" in new Fixture {
       prop { (message: Message) =>
-        messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must not(throwA[Exception])
+        messageStore.storeInboundWithOutboundMessages(
+          aggregatedConnectionId,
+          timestamp,
+          message,
+          Seq.empty
+        ) must not(throwA[Exception])
 
         val loaded = messageStore.findByConnectionId(aggregatedConnectionId)
         loaded.map(_.createdAt).lastOption must beSome(timestamp)
@@ -70,7 +87,12 @@ abstract class MessageStoreSpecification extends org.specs2.mutable.Specificatio
     "retrieve based on correlation id" in new Fixture {
       prop { (message: Message) =>
         withCorrelationId(message) { correlationId =>
-          messageStore.storeInboundWithOutboundMessages(aggregatedConnectionId, timestamp, message, Seq.empty) must not(throwA[Exception])
+          messageStore.storeInboundWithOutboundMessages(
+            aggregatedConnectionId,
+            timestamp,
+            message,
+            Seq.empty
+          ) must not(throwA[Exception])
 
           val loaded = messageStore.findByCorrelationId(requesterNsa, correlationId)
           loaded.map(_.message).lastOption aka "message" must beSome(message)

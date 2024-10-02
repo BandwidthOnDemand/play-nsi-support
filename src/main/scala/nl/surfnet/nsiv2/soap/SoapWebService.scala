@@ -53,16 +53,21 @@ trait SoapWebService {
   private def replaceSoapAddress(wsdl: String) = {
     wsdl.replaceAll(
       """(?i)<\s*soap:address\s+location\s*=\s*['"](.*)['"]\s*/>""",
-      s"""<soap:address location="$serviceUrl" />""")
+      s"""<soap:address location="$serviceUrl" />"""
+    )
   }
 
-  private def serveWsdl(path: String)(transform: RequestHeader => String => String) = actionBuilder { implicit request =>
-    readClasspathWsdl(path).map(transform(request)).map { body =>
-      Ok(body).as(ContentTypes.XML)
-    }.getOrElse {
-      NotFound(s"Resource '$path' not found")
+  private def serveWsdl(path: String)(transform: RequestHeader => String => String) =
+    actionBuilder { implicit request =>
+      readClasspathWsdl(path)
+        .map(transform(request))
+        .map { body =>
+          Ok(body).as(ContentTypes.XML)
+        }
+        .getOrElse {
+          NotFound(s"Resource '$path' not found")
+        }
     }
-  }
 
   private def readClasspathResource(resource: String): Option[String] = Try {
     scala.io.Source.fromResource(resource).mkString
@@ -70,6 +75,9 @@ trait SoapWebService {
 
   private def readClasspathWsdl(name: String): Option[String] = {
     val resolved = Try(URI.create(WsdlPath).resolve(name).toString).toOption
-    resolved.filterNot(_ contains "..").filterNot(_ startsWith "/").flatMap(name => readClasspathResource(s"$WsdlRoot/$name"))
+    resolved
+      .filterNot(_ contains "..")
+      .filterNot(_ startsWith "/")
+      .flatMap(name => readClasspathResource(s"$WsdlRoot/$name"))
   }
 }

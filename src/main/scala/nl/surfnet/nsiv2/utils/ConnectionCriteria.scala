@@ -25,8 +25,12 @@ package nl.surfnet.nsiv2.utils
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 
-final case class ConnectionCriteria(pending: Option[Either[ReservationRequestCriteriaType, ReservationConfirmCriteriaType]], committed: Option[ReservationConfirmCriteriaType]) {
-  def withRequested(requested: ReservationRequestCriteriaType) = copy(pending = Some(Left(requested)))
+final case class ConnectionCriteria(
+    pending: Option[Either[ReservationRequestCriteriaType, ReservationConfirmCriteriaType]],
+    committed: Option[ReservationConfirmCriteriaType]
+) {
+  def withRequested(requested: ReservationRequestCriteriaType) =
+    copy(pending = Some(Left(requested)))
   def withHeld(held: ReservationConfirmCriteriaType) = copy(pending = Some(Right(held)))
 
   def commit = copy(pending = None, committed = pending.flatMap(_.toOption))
@@ -36,10 +40,14 @@ final case class ConnectionCriteria(pending: Option[Either[ReservationRequestCri
   def confirmed = pending.flatMap(_.toOption)
 
   def pendingVersion: Int = {
-    pending.flatMap(_.fold(
-      requested => if (requested.getVersion eq null) None else Some(requested.getVersion.intValue),
-      confirmed => Some(confirmed.getVersion)
-    ))
+    pending
+      .flatMap(
+        _.fold(
+          requested =>
+            if (requested.getVersion eq null) None else Some(requested.getVersion.intValue),
+          confirmed => Some(confirmed.getVersion)
+        )
+      )
       .orElse(committed.map(_.getVersion + 1))
       .getOrElse(1)
   }

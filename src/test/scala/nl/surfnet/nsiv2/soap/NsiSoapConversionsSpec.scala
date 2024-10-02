@@ -3,7 +3,7 @@ package nl.surfnet.nsiv2.soap
 import org.specs2._
 
 import jakarta.xml.bind.JAXBElement
-import net.nordu.namespaces._2013._12.gnsbod.{ ConnectionTraceType, ConnectionType }
+import net.nordu.namespaces._2013._12.gnsbod.{ConnectionTraceType, ConnectionType}
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.messages._
 import nl.surfnet.nsiv2.utils._
@@ -17,11 +17,23 @@ import akka.util.ByteString
 class NsiSoapConversionsSpec extends mutable.Specification {
   import NsiSoapConversions._
 
-  val DefaultAckHeaders = NsiHeaders(CorrelationId.random(), "requesterNSA", "providerNSA", None, NsiHeaders.RequesterProtocolVersion)
+  val DefaultAckHeaders = NsiHeaders(
+    CorrelationId.random(),
+    "requesterNSA",
+    "providerNSA",
+    None,
+    NsiHeaders.RequesterProtocolVersion
+  )
 
-  val providerOperationToStringConversion = NsiProviderMessageToDocument(None)(NsiProviderOperationToElement).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
-  val requestOperationToStringConversion = NsiRequesterMessageToDocument(None)(NsiRequesterOperationToElement).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
-  val requestAckToStringConversion = NsiRequesterMessageToDocument(Some(DefaultAckHeaders))(NsiAcknowledgementOperationToElement).andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
+  val providerOperationToStringConversion = NsiProviderMessageToDocument(None)(
+    NsiProviderOperationToElement
+  ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+  val requestOperationToStringConversion = NsiRequesterMessageToDocument(None)(
+    NsiRequesterOperationToElement
+  ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+  val requestAckToStringConversion = NsiRequesterMessageToDocument(Some(DefaultAckHeaders))(
+    NsiAcknowledgementOperationToElement
+  ).andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
 
   "NSI requester operation to string" should {
 
@@ -132,7 +144,12 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       val requesterMessage = requestOperationToStringConversion.invert(soapFault)
 
       requesterMessage must beLike {
-        case Failure(ErrorMessage("SOAP fault without {http://schemas.ogf.org/nsi/2013/12/connection/types}serviceException. Fault string: Fault occurred while processing.")) => ok
+        case Failure(
+              ErrorMessage(
+                "SOAP fault without {http://schemas.ogf.org/nsi/2013/12/connection/types}serviceException. Fault string: Fault occurred while processing."
+              )
+            ) =>
+          ok
       }
     }
 
@@ -167,18 +184,18 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       requesterMessage must beLike {
         case Success(NsiRequesterMessage(headers, ServiceException(exception))) =>
           headers must_== NsiHeaders(
-              CorrelationId.fromString("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436").get,
-              "urn:ogf:network:nsa:surfnet-nsi-requester",
-              "urn:ogf:network:nsa:surfnet.nl",
-              None,
-              NsiHeaders.RequesterProtocolVersion,
-              Nil
+            CorrelationId.fromString("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436").get,
+            "urn:ogf:network:nsa:surfnet-nsi-requester",
+            "urn:ogf:network:nsa:surfnet.nl",
+            None,
+            NsiHeaders.RequesterProtocolVersion,
+            Nil
           )
           exception.getErrorId() must_== "103"
       }
 
-      requestAckToStringConversion(requesterMessage.get) must beLike {
-        case Success(xml) => xml must contain("<soapenv:Fault") and contain("<errorId>103</errorId>")
+      requestAckToStringConversion(requesterMessage.get) must beLike { case Success(xml) =>
+        xml must contain("<soapenv:Fault") and contain("<errorId>103</errorId>")
       }
     }
 
@@ -202,9 +219,8 @@ class NsiSoapConversionsSpec extends mutable.Specification {
 
       val requesterMessage = requestAckToStringConversion.invert(soapFault)
 
-      requesterMessage must beLike {
-        case Success(NsiRequesterMessage(headers, _)) =>
-          headers must_== DefaultAckHeaders
+      requesterMessage must beLike { case Success(NsiRequesterMessage(headers, _)) =>
+        headers must_== DefaultAckHeaders
       }
     }
 
@@ -255,24 +271,23 @@ class NsiSoapConversionsSpec extends mutable.Specification {
               <replyTo>http://localhost:9000/reply</replyTo>
               <sessionSecurityAttr>
                 <saml:Attribute Name="token">
-                  <saml:AttributeValue xsi:type="xs:string">{ token }</saml:AttributeValue>
+                  <saml:AttributeValue xsi:type="xs:string">{token}</saml:AttributeValue>
                 </saml:Attribute>
                 <saml:Attribute Name="user">
-                  <saml:AttributeValue xsi:type="xs:string">{ user }</saml:AttributeValue>
+                  <saml:AttributeValue xsi:type="xs:string">{user}</saml:AttributeValue>
                 </saml:Attribute>
               </sessionSecurityAttr>
             </head:nsiHeader>
           </soapenv:Header>
-          <soapenv:Body>{ reserveBody }</soapenv:Body>
+          <soapenv:Body>{reserveBody}</soapenv:Body>
         </soapenv:Envelope>
 
       val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
 
-      reserveMessage must beLike {
-        case NsiProviderMessage(headers: NsiHeaders, _) =>
-          headers.sessionSecurityAttrs must contain(like[SessionSecurityAttrType] {
-            case attrs => attrs.getAttributeOrEncryptedAttribute() must haveSize(2)
-          }).exactly(1)
+      reserveMessage must beLike { case NsiProviderMessage(headers: NsiHeaders, _) =>
+        headers.sessionSecurityAttrs must contain(like[SessionSecurityAttrType] { case attrs =>
+          attrs.getAttributeOrEncryptedAttribute() must haveSize(2)
+        }).exactly(1)
       }
 
       val Success(output) = providerOperationToStringConversion.apply(reserveMessage)
@@ -300,22 +315,37 @@ class NsiSoapConversionsSpec extends mutable.Specification {
               </gns:ConnectionTrace>
             </head:nsiHeader>
           </soapenv:Header>
-          <soapenv:Body>{ reserveBody }</soapenv:Body>
+          <soapenv:Body>{reserveBody}</soapenv:Body>
         </soapenv:Envelope>
 
       val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
 
-      reserveMessage must beLike {
-        case NsiProviderMessage(headers: NsiHeaders, _) =>
-          headers.any.elements must haveSize(1)
-          headers.any.elements(0) must beAnInstanceOf[JAXBElement[_]]
-          headers.any.elements(0).asInstanceOf[JAXBElement[AnyRef]].getValue must beAnInstanceOf[ConnectionTraceType]
-          headers.any.elements(0).asInstanceOf[JAXBElement[ConnectionTraceType]].getValue.getConnection.asScala must contain(equalTo(new ConnectionType().withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890").withIndex(1)))
+      reserveMessage must beLike { case NsiProviderMessage(headers: NsiHeaders, _) =>
+        headers.any.elements must haveSize(1)
+        headers.any.elements(0) must beAnInstanceOf[JAXBElement[_]]
+        headers.any
+          .elements(0)
+          .asInstanceOf[JAXBElement[AnyRef]]
+          .getValue must beAnInstanceOf[ConnectionTraceType]
+        headers.any
+          .elements(0)
+          .asInstanceOf[JAXBElement[ConnectionTraceType]]
+          .getValue
+          .getConnection
+          .asScala must contain(
+          equalTo(
+            new ConnectionType()
+              .withValue("urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890")
+              .withIndex(1)
+          )
+        )
       }
 
       val Success(output) = providerOperationToStringConversion.apply(reserveMessage)
 
-      output must contain(<Connection index="1">urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890</Connection>.toString)
+      output must contain(
+        <Connection index="1">urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890</Connection>.toString
+      )
     }
   }
 
@@ -372,7 +402,8 @@ class NsiSoapConversionsSpec extends mutable.Specification {
 
   "roundtrip conversion" should {
     "work for real example" in {
-      val input = <soap:Envelope xmlns:ctypes="http://schemas.ogf.org/nsi/2013/12/connection/types" xmlns:header="http://schemas.ogf.org/nsi/2013/12/framework/headers" xmlns:ns2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ns3="http://nordu.net/namespaces/2013/12/gnsbod" xmlns:p2psrv="http://schemas.ogf.org/nsi/2013/12/services/point2point" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+      val input =
+        <soap:Envelope xmlns:ctypes="http://schemas.ogf.org/nsi/2013/12/connection/types" xmlns:header="http://schemas.ogf.org/nsi/2013/12/framework/headers" xmlns:ns2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ns3="http://nordu.net/namespaces/2013/12/gnsbod" xmlns:p2psrv="http://schemas.ogf.org/nsi/2013/12/services/point2point" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
    <soap:Header>
       <header:nsiHeader>
          <protocolVersion>application/vnd.ogf.nsi.cs.v2.provider+soap</protocolVersion>
@@ -415,11 +446,12 @@ class NsiSoapConversionsSpec extends mutable.Specification {
    </soap:Body>
 </soap:Envelope>.toString
 
-        val converter = NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(NsiXmlDocumentConversion)
-        val Success(doc) = converter.invert(ByteString(input))
-        val Success(arr) = converter(doc)
+      val converter =
+        NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(NsiXmlDocumentConversion)
+      val Success(doc) = converter.invert(ByteString(input))
+      val Success(arr) = converter(doc)
 
-        converter.invert(arr) must beSuccessfulTry
+      converter.invert(arr) must beSuccessfulTry
     }
   }
 }

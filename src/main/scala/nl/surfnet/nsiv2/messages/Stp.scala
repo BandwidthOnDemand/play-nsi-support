@@ -24,7 +24,7 @@ package nl.surfnet.nsiv2
 package messages
 
 import com.google.common.collect.ImmutableRangeSet
-import com.google.common.collect.{ Range => GRange }
+import com.google.common.collect.{Range => GRange}
 import com.google.common.collect.TreeRangeSet
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -38,10 +38,13 @@ import com.google.common.collect.BoundType
 
 final class VlanRange(private val ranges: ImmutableRangeSet[Integer]) {
   require(!ranges.isEmpty, "VLAN ranges cannot be empty")
-  require(ranges.asRanges().asScala.forall { r =>
-    (r.hasLowerBound() && r.lowerBoundType() == BoundType.CLOSED
-        && r.hasUpperBound() && r.upperBoundType() == BoundType.CLOSED)
-  }, "all ranges must be closed")
+  require(
+    ranges.asRanges().asScala.forall { r =>
+      (r.hasLowerBound() && r.lowerBoundType() == BoundType.CLOSED
+      && r.hasUpperBound() && r.upperBoundType() == BoundType.CLOSED)
+    },
+    "all ranges must be closed"
+  )
 
   private def span = ranges.span
 
@@ -73,15 +76,20 @@ final class VlanRange(private val ranges: ImmutableRangeSet[Integer]) {
 
   override def hashCode = ranges.hashCode
 
-  override def toString = ranges.asRanges().asScala.map { range =>
-    (range.lowerEndpoint(), range.upperEndpoint()) match {
-      case (lower, upper) if lower == upper => f"$lower%d"
-      case (lower, upper)                   => f"$lower%d-$upper%d"
+  override def toString = ranges
+    .asRanges()
+    .asScala
+    .map { range =>
+      (range.lowerEndpoint(), range.upperEndpoint()) match {
+        case (lower, upper) if lower == upper => f"$lower%d"
+        case (lower, upper)                   => f"$lower%d-$upper%d"
+      }
     }
-  }.mkString(",")
+    .mkString(",")
 }
 object VlanRange {
-  private final val ALLOWED_SYNTAX = Pattern.compile("\\s*\\d+(\\s*-\\s*\\d+)?(\\s*,\\s*\\d+(\\s*-\\s*\\d+)?)*\\s*")
+  private final val ALLOWED_SYNTAX =
+    Pattern.compile("\\s*\\d+(\\s*-\\s*\\d+)?(\\s*,\\s*\\d+(\\s*-\\s*\\d+)?)*\\s*")
   private final val RANGE_PATTERN = "(\\d+)-(\\d+)".r
   private final val SINGLETON_PATTERN = "(\\d+)".r
 
@@ -97,16 +105,21 @@ object VlanRange {
 
   def range(range: Range): Option[VlanRange] = {
     val end = if (range.isInclusive) range.end else range.end - 1
-    if (range.start <= end && range.step == 1) Some(VlanRange(Seq(GRange.closed(range.start, end)))) else None
+    if (range.start <= end && range.step == 1) Some(VlanRange(Seq(GRange.closed(range.start, end))))
+    else None
   }
 
-  def fromString(s: String): Option[VlanRange] = if (!ALLOWED_SYNTAX.matcher(s).matches()) None else Try {
-    val ranges = s.replaceAll("\\s+", "").split(",").map {
-      case RANGE_PATTERN(lower, upper) => GRange.closed(Integer.valueOf(lower), Integer.valueOf(upper))
-      case SINGLETON_PATTERN(value)    => GRange.singleton(Integer.valueOf(value))
-    }
-    VlanRange(ranges.toIndexedSeq)
-  }.toOption
+  def fromString(s: String): Option[VlanRange] =
+    if (!ALLOWED_SYNTAX.matcher(s).matches()) None
+    else
+      Try {
+        val ranges = s.replaceAll("\\s+", "").split(",").map {
+          case RANGE_PATTERN(lower, upper) =>
+            GRange.closed(Integer.valueOf(lower), Integer.valueOf(upper))
+          case SINGLETON_PATTERN(value) => GRange.singleton(Integer.valueOf(value))
+        }
+        VlanRange(ranges.toIndexedSeq)
+      }.toOption
 }
 
 case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = SortedMap.empty) {
@@ -117,7 +130,8 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
 
   def withoutLabel(labelType: String) = copy(labels = labels - labelType)
 
-  def withLabel(labelType: String, labelValue: String) = copy(labels = labels + (labelType -> Some(labelValue)))
+  def withLabel(labelType: String, labelValue: String) =
+    copy(labels = labels + (labelType -> Some(labelValue)))
 
   def vlan: Option[VlanRange] = labels.getOrElse("vlan", None).flatMap(VlanRange.fromString)
 
@@ -129,34 +143,48 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
     case _                                => false
   }
 
-  def isServerVlanCompatibleWith(target: Stp): Boolean = (this.serverVlan, target.serverVlan) match {
-    case (None, None)                     => true
-    case (Some(specified), Some(allowed)) => specified isSubsetOf allowed
-    case _                                => false
-  }
+  def isServerVlanCompatibleWith(target: Stp): Boolean =
+    (this.serverVlan, target.serverVlan) match {
+      case (None, None)                     => true
+      case (Some(specified), Some(allowed)) => specified isSubsetOf allowed
+      case _                                => false
+    }
 
-  def isCompatibleWith(that: Stp) = this.identifier == that.identifier && this.isClientVlanCompatibleWith(that) && this.isServerVlanCompatibleWith(that)
+  def isCompatibleWith(that: Stp) =
+    this.identifier == that.identifier && this.isClientVlanCompatibleWith(that) && this
+      .isServerVlanCompatibleWith(that)
 
   override def toString = UriEncoding.encodePathSegment(identifier, "UTF-8") ++ queryString
 
-  private def queryString = if (labels.isEmpty) "" else labels.iterator.map {
-    case (label, None)        => URLEncoder.encode(label, "UTF-8")
-    case (label, Some(value)) => s"${URLEncoder.encode(label, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
-  }.mkString("?", "&", "")
+  private def queryString = if (labels.isEmpty) ""
+  else
+    labels.iterator
+      .map {
+        case (label, None) => URLEncoder.encode(label, "UTF-8")
+        case (label, Some(value)) =>
+          s"${URLEncoder.encode(label, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+      }
+      .mkString("?", "&", "")
 }
 
 object Stp {
   type Label = (String, Option[String])
 
   import scala.math.Ordering.Implicits._
-  implicit val StpOrdering: Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
+  implicit val StpOrdering: Ordering[Stp] =
+    Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
 
   private val LabelPattern = "([^=]*)(?:=([^=]*))?".r
 
   def fromString(s: String): Option[Stp] = {
     def parseLabel(label: String): Option[Label] = label match {
       case LabelPattern(labelType, labelValue) if labelType.nonEmpty =>
-        Some((URLDecoder.decode(labelType, "UTF-8"), Option(labelValue).map(URLDecoder.decode(_, "UTF-8"))))
+        Some(
+          (
+            URLDecoder.decode(labelType, "UTF-8"),
+            Option(labelValue).map(URLDecoder.decode(_, "UTF-8"))
+          )
+        )
       case _ =>
         None
     }

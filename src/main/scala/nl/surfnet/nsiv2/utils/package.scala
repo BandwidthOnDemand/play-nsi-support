@@ -25,12 +25,11 @@ package nl.surfnet.nsiv2
 import java.net.URI
 import java.time._
 import java.util.GregorianCalendar
-import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.messages._
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
-import scala.util.{ Failure, Success, Try }
-
+import scala.util.{Failure, Success, Try}
 
 package object utils {
   def classpathResourceUri(name: String): URI = {
@@ -48,7 +47,8 @@ package object utils {
 
   implicit class OptionOps[A](value: Option[A]) {
     def toTry(ifNone: => Throwable): Try[A] = value.map(Success(_)).getOrElse(Failure(ifNone))
-    def toTry(ifNone: String): Try[A] = value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
+    def toTry(ifNone: String): Try[A] =
+      value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
   }
 
   implicit class OptionTryOps[A](value: Option[Try[A]]) {
@@ -84,18 +84,23 @@ package object utils {
     }
   }
 
-  implicit class NillableOps[T] (nillable: Nillable[T]) {
-    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] { def apply(a: A) = f(a) }
+  implicit class NillableOps[T](nillable: Nillable[T]) {
+    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] {
+      def apply(a: A) = f(a)
+    }
     private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
 
-    def map2[A] (f: T => A) = nillable map asJavaFunction1(f)
-    def fold2[A] (p: T => A, a: => A, n: => A) = nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
-    def orElse2 (f: => Nillable[T]) = nillable orElse asJavaSupplier(f)
-    def toOption (nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
+    def map2[A](f: T => A) = nillable map asJavaFunction1(f)
+    def fold2[A](p: T => A, a: => A, n: => A) =
+      nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
+    def orElse2(f: => Nillable[T]) = nillable orElse asJavaSupplier(f)
+    def toOption(nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
   }
 
   implicit class ScheduleTypeOps(schedule: ScheduleType) {
-    def startTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
-    def endTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
+    def startTime: Nillable[Instant] =
+      Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
+    def endTime: Nillable[Instant] =
+      Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
   }
 }

@@ -24,24 +24,25 @@ package nl.surfnet.nsiv2.utils
 
 import play.api.Logger
 
-/**
- * Simplified re-implementation of Akka's finite state machine [[akka.actor.FSM]]
- * DSL, without the dependencies on actors.
- */
-abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateData: D) extends StateMachine[I, O] {
+/** Simplified re-implementation of Akka's finite state machine [[akka.actor.FSM]] DSL, without the
+  * dependencies on actors.
+  */
+abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateData: D)
+    extends StateMachine[I, O] {
   private val logger = Logger(classOf[FiniteStateMachine[?, ?, ?, ?]])
 
-  /**
-   * Process the given message. Returns `None` if the FSM did not handle the
-   * message. Otherwise the replies (if any) are returned.
-   */
+  /** Process the given message. Returns `None` if the FSM did not handle the message. Otherwise the
+    * replies (if any) are returned.
+    */
   def process(message: I): Option[Seq[O]] = {
     val nextState = _handlers(stateName).orElse(_unhandled).lift.apply(Event(message, _stateData))
     nextState map { nextState =>
       _nextStateName = nextState.name
       _nextStateData = nextState.data
       val output = if (_transitionHandler.isDefinedAt((_stateName, _nextStateName))) {
-        logger.debug(s"state change from ${_stateName} to ${_nextStateName} with defined transition handler")
+        logger.debug(
+          s"state change from ${_stateName} to ${_nextStateName} with defined transition handler"
+        )
         _transitionHandler((_stateName, _nextStateName))
       } else {
         Vector.empty
@@ -54,11 +55,9 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
 
   override def toString = s"${super.toString}(stateName = $stateName, stateData = $stateData)"
 
-  /**
-   * This captures all of the managed state of the state machine: the state
-   * name, the state data, and replies accumulated while processing the last
-   * message.
-   */
+  /** This captures all of the managed state of the state machine: the state name, the state data,
+    * and replies accumulated while processing the last message.
+    */
   protected[this] case class State(name: S, data: D) {
     def using(nextData: D) = copy(data = nextData)
   }
@@ -70,8 +69,8 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
   protected[this] def nextStateName = _nextStateName
   protected[this] def nextStateData = _nextStateData
 
-  protected[this]type EventHandler = PartialFunction[Event, State]
-  protected[this]type TransitionHandler = PartialFunction[(S, S), Seq[O]]
+  protected[this] type EventHandler = PartialFunction[Event, State]
+  protected[this] type TransitionHandler = PartialFunction[(S, S), Seq[O]]
 
   protected[this] def when(stateName: S, otherStateNames: S*)(handler: EventHandler): Unit = {
     val states = stateName :: otherStateNames.toList
@@ -93,10 +92,9 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
   }
   protected[this] def stay = goto(stateName)
 
-  /**
-   * This extractor is just convenience for matching a (S, S) pair, including a
-   * reminder what the new state is.
-   */
+  /** This extractor is just convenience for matching a (S, S) pair, including a reminder what the
+    * new state is.
+    */
   protected[this] object -> {
     def unapply(in: (S, S)) = Some(in)
   }

@@ -44,40 +44,51 @@ package object messages {
   type ConnectionId = String
   type GlobalReservationId = URI
 
-  private[messages] val PointToPointObjectFactory = new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
+  private[messages] val PointToPointObjectFactory =
+    new org.ogf.schemas.nsi._2013._12.services.point2point.ObjectFactory()
 
-  val NSI_HEADERS_OBJECT_FACTORY = new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
+  val NSI_HEADERS_OBJECT_FACTORY =
+    new org.ogf.schemas.nsi._2013._12.framework.headers.ObjectFactory()
   val QNAME_NSI_POINT_TO_POINT = PointToPointObjectFactory.createP2Ps(null).getName()
   val QNAME_NSI_P2PS_CAPACITY = PointToPointObjectFactory.createCapacity(null).getName()
   val QNAME_NSI_HEADERS = NSI_HEADERS_OBJECT_FACTORY.createNsiHeader(null).getName()
-  val QNAME_NSI_TYPES = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory()).createAcknowledgment(null).getName()
+  val QNAME_NSI_TYPES = (new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory())
+    .createAcknowledgment(null)
+    .getName()
 
   private val NULL_P2PS_ELEMENT = PointToPointObjectFactory.createP2Ps(null)
   private val NULL_CAPACITY_P2PS_ELEMENT = PointToPointObjectFactory.createCapacity(null)
   private val NULL_PARAMETER_P2PS_ELEMENT = PointToPointObjectFactory.createParameter(null)
 
-  def valueFormat[T](message: String)(parse: String => Option[T], print: T => String): Format[T] = new Format[T] {
-    override def reads(json: JsValue): JsResult[T] = json match {
-      case JsString(s) => parse(s) match {
-        case Some(t) => JsSuccess(t)
-        case None    => JsError(Seq(JsPath() -> Seq(JsonValidationError(message, s))))
+  def valueFormat[T](message: String)(parse: String => Option[T], print: T => String): Format[T] =
+    new Format[T] {
+      override def reads(json: JsValue): JsResult[T] = json match {
+        case JsString(s) =>
+          parse(s) match {
+            case Some(t) => JsSuccess(t)
+            case None    => JsError(Seq(JsPath() -> Seq(JsonValidationError(message, s))))
+          }
+        case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("error.expected.jsstring"))))
       }
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("error.expected.jsstring"))))
+      override def writes(t: T): JsValue = JsString(print(t))
     }
-    override def writes(t: T): JsValue = JsString(print(t))
-  }
 
-  def unaryCaseClassFormat[A: Format, B](fieldName: String)(apply: A => B, unapply: B => Option[A]): OFormat[B] = (__ \ fieldName).format[A].inmap(apply, unlift(unapply))
+  def unaryCaseClassFormat[A: Format, B](
+      fieldName: String
+  )(apply: A => B, unapply: B => Option[A]): OFormat[B] =
+    (__ \ fieldName).format[A].inmap(apply, unlift(unapply))
 
   implicit val JavaTimeInstantFormat: Format[java.time.Instant] = Format(
     implicitly[Reads[Long]].map(java.time.Instant.ofEpochMilli),
-    Writes(d => JsNumber(d.toEpochMilli)))
+    Writes(d => JsNumber(d.toEpochMilli))
+  )
   implicit val UriFormat: Format[URI] = valueFormat("error.expected.uri")(
     parse = s => Try(URI.create(s)).toOption,
-    print = _.toASCIIString)
-  implicit val CorrelationIdFormat: Format[CorrelationId] = valueFormat("error.expected.correlationId")(
-    parse = CorrelationId.fromString,
-    print = _.toString)
+    print = _.toASCIIString
+  )
+  implicit val CorrelationIdFormat: Format[CorrelationId] = valueFormat(
+    "error.expected.correlationId"
+  )(parse = CorrelationId.fromString, print = _.toString)
 
   implicit class XmlGregorianCalendarOps(cal: XMLGregorianCalendar) {
     def toInstant = {
@@ -89,7 +100,8 @@ package object messages {
     def any: XmlAny = HasXmlAny[A].any(a)
 
     def findAny[T: ClassTag](nullElement: JAXBElement[T]) = HasXmlAny[A].findAny(a, nullElement)
-    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]) = HasXmlAny[A].findFirstAny(a, nullElement)
+    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]) =
+      HasXmlAny[A].findFirstAny(a, nullElement)
     def removeAny(nullElement: JAXBElement[_]) = HasXmlAny[A].removeAny(a, nullElement)
     def updateAny(element: JAXBElement[_]) = HasXmlAny[A].updateAny(a, element)
   }
@@ -100,7 +112,8 @@ package object messages {
       a
     }
 
-    def pointToPointService: Option[P2PServiceBaseType] = HasXmlAny[A].findFirstAny(a, NULL_P2PS_ELEMENT)
+    def pointToPointService: Option[P2PServiceBaseType] =
+      HasXmlAny[A].findFirstAny(a, NULL_P2PS_ELEMENT)
   }
 
   final val PROTECTION_PARAMETER_TYPE = "protection"
@@ -124,7 +137,8 @@ package object messages {
       }
     }
 
-    def protectionType: Option[ProtectionType] = parameters(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
+    def protectionType: Option[ProtectionType] =
+      parameters(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
 
     def protectionType_=(protection: Option[ProtectionType]): Unit = {
       parameters(PROTECTION_PARAMETER_TYPE) = protection.map(_.toString)
@@ -139,9 +153,15 @@ package object messages {
     }
   }
 
-  implicit class ReservationRequestCriteriaTypeOps(requestCriteria: ReservationRequestCriteriaType) {
-    def toModifiedConfirmCriteria(previouslyCommittedCriteria: ReservationConfirmCriteriaType): Try[ReservationConfirmCriteriaType] = for {
-      committedP2P <- previouslyCommittedCriteria.pointToPointService.toTry(s"point2point service is missing from committed criteria")
+  implicit class ReservationRequestCriteriaTypeOps(
+      requestCriteria: ReservationRequestCriteriaType
+  ) {
+    def toModifiedConfirmCriteria(
+        previouslyCommittedCriteria: ReservationConfirmCriteriaType
+    ): Try[ReservationConfirmCriteriaType] = for {
+      committedP2P <- previouslyCommittedCriteria.pointToPointService.toTry(
+        s"point2point service is missing from committed criteria"
+      )
     } yield {
       val confirmP2P = committedP2P.shallowCopy
 
@@ -150,35 +170,53 @@ package object messages {
         confirmP2P.parameters(parameter.getType) = Some(parameter.getValue)
       }
 
-      val schedule = Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
+      val schedule =
+        Option(requestCriteria.getSchedule) getOrElse previouslyCommittedCriteria.getSchedule
       schedule.withStartTime(
-        schedule.getStartTime orElse2 previouslyCommittedCriteria.getSchedule.startTime.map2(_.toXMLGregorianCalendar())
+        schedule.getStartTime orElse2 previouslyCommittedCriteria.getSchedule.startTime.map2(
+          _.toXMLGregorianCalendar()
+        )
       )
 
       val confirmCriteria = new ReservationConfirmCriteriaType()
         .withAny(previouslyCommittedCriteria.getAny)
         .withServiceType(previouslyCommittedCriteria.getServiceType)
         .withSchedule(schedule)
-        .withVersion(if (requestCriteria.getVersion eq null) previouslyCommittedCriteria.getVersion + 1 else requestCriteria.getVersion)
+        .withVersion(
+          if (requestCriteria.getVersion eq null) previouslyCommittedCriteria.getVersion + 1
+          else requestCriteria.getVersion
+        )
       confirmCriteria.withPointToPointService(confirmP2P)
       confirmCriteria.getOtherAttributes.putAll(previouslyCommittedCriteria.getOtherAttributes)
       confirmCriteria
     }
 
-    def toInitialConfirmCriteria(fullySpecifiedSource: String, fullySpecifiedDest: String): Try[ReservationConfirmCriteriaType] =
-      toModifiedConfirmCriteria(new ReservationConfirmCriteriaType()
-        .withAny(requestCriteria.getAny)
-        .withSchedule(new ScheduleType())
-        .withServiceType(requestCriteria.getServiceType)
-        .withPointToPointService(requestCriteria.pointToPointService.get.shallowCopy.withSourceSTP(fullySpecifiedSource).withDestSTP(fullySpecifiedDest))
-        .withVersion(0))
+    def toInitialConfirmCriteria(
+        fullySpecifiedSource: String,
+        fullySpecifiedDest: String
+    ): Try[ReservationConfirmCriteriaType] =
+      toModifiedConfirmCriteria(
+        new ReservationConfirmCriteriaType()
+          .withAny(requestCriteria.getAny)
+          .withSchedule(new ScheduleType())
+          .withServiceType(requestCriteria.getServiceType)
+          .withPointToPointService(
+            requestCriteria.pointToPointService.get.shallowCopy
+              .withSourceSTP(fullySpecifiedSource)
+              .withDestSTP(fullySpecifiedDest)
+          )
+          .withVersion(0)
+      )
 
     /** Schedule is optional. */
     def schedule: Option[ScheduleType] = Option(requestCriteria.getSchedule)
 
-    def version: Option[Int] = if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
+    def version: Option[Int] =
+      if (requestCriteria.getVersion eq null) None else Some(requestCriteria.getVersion.intValue)
 
-    def modifiedCapacity: Option[Long] = requestCriteria.findFirstAny(NULL_CAPACITY_P2PS_ELEMENT).map(Long2long)
+    def modifiedCapacity: Option[Long] = requestCriteria
+      .findFirstAny(NULL_CAPACITY_P2PS_ELEMENT)
+      .map(Long2long)
       .orElse(
         // Look in P2PServiceBaseType for backwards compatibility with replayed messages
         requestCriteria.pointToPointService.map(_.getCapacity)
@@ -188,14 +226,18 @@ package object messages {
       requestCriteria
     }
 
-    def modifiedParameters: Seq[TypeValueType] = requestCriteria.findAny(NULL_PARAMETER_P2PS_ELEMENT)
+    def modifiedParameters: Seq[TypeValueType] =
+      requestCriteria.findAny(NULL_PARAMETER_P2PS_ELEMENT)
     def withModifiedParameters(parameters: TypeValueType*) = {
       requestCriteria.removeAny(NULL_PARAMETER_P2PS_ELEMENT)
-      requestCriteria.getAny().addAll(parameters.map(PointToPointObjectFactory.createParameter).asJava)
+      requestCriteria
+        .getAny()
+        .addAll(parameters.map(PointToPointObjectFactory.createParameter).asJava)
     }
   }
 
   implicit class ReservationConfirmCriteriaTypeOps(criteria: ReservationConfirmCriteriaType) {
+
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
 
@@ -203,6 +245,7 @@ package object messages {
   }
 
   implicit class QuerySummaryResultCriteriaTypeOps(criteria: QuerySummaryResultCriteriaType) {
+
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
   }
@@ -211,20 +254,22 @@ package object messages {
     def shallowCopy: A = ShallowCopyable[A].shallowCopy(a)
   }
 
-  implicit val P2PServiceBaseTypeShallowCopyable: ShallowCopyable[P2PServiceBaseType] = ShallowCopyable.build { a =>
-    new P2PServiceBaseType()
-      .withAny(a.getAny)
-      .withCapacity(a.getCapacity)
-      .withDestSTP(a.getDestSTP)
-      .withDirectionality(a.getDirectionality)
-      .withEro(a.getEro)
-      .withParameter(a.getParameter)
-      .withSourceSTP(a.getSourceSTP)
-      .withSymmetricPath(a.isSymmetricPath)
-  }
+  implicit val P2PServiceBaseTypeShallowCopyable: ShallowCopyable[P2PServiceBaseType] =
+    ShallowCopyable.build { a =>
+      new P2PServiceBaseType()
+        .withAny(a.getAny)
+        .withCapacity(a.getCapacity)
+        .withDestSTP(a.getDestSTP)
+        .withDirectionality(a.getDirectionality)
+        .withEro(a.getEro)
+        .withParameter(a.getParameter)
+        .withSourceSTP(a.getSourceSTP)
+        .withSymmetricPath(a.isSymmetricPath)
+    }
 
-  implicit val ScheduleTypeShallowCopyable: ShallowCopyable[ScheduleType] = ShallowCopyable.build { a =>
-    new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
+  implicit val ScheduleTypeShallowCopyable: ShallowCopyable[ScheduleType] = ShallowCopyable.build {
+    a =>
+      new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
   }
 
   private[messages] implicit class RichString(str: String) {

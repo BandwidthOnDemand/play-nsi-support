@@ -29,8 +29,9 @@ object Generators {
     mostSigBits <- arbitrary[Long]
   } yield CorrelationId(mostSigBits, leastSigBits))
 
-  implicit val ArbitraryURI: Arbitrary[URI] = Arbitrary(Gen.oneOf(
-    "https://www.host.invalid/foo/bar", "https://localhost:8443/").map(URI.create))
+  implicit val ArbitraryURI: Arbitrary[URI] = Arbitrary(
+    Gen.oneOf("https://www.host.invalid/foo/bar", "https://localhost:8443/").map(URI.create)
+  )
 
   implicit val ArbitraryScheduleType: Arbitrary[ScheduleType] = Arbitrary(for {
     startTime <- arbitrary[Nillable[XMLGregorianCalendar]]
@@ -43,9 +44,13 @@ object Generators {
 
   implicit val ArbitraryXMLGregorianCalendar: Arbitrary[XMLGregorianCalendar] = Arbitrary(for {
     now <- arbitrary[Instant]
-  } yield now.toXMLGregorianCalendar() )
+  } yield now.toXMLGregorianCalendar())
 
-  implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s => Stp.fromString(s) map Gen.const getOrElse Gen.fail })
+  implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(
+    Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s =>
+      Stp.fromString(s) map Gen.const getOrElse Gen.fail
+    }
+  )
 
   implicit def ArbitraryNillable[A](implicit a: Arbitrary[A]): Arbitrary[Nillable[A]] = Arbitrary {
     for {
@@ -54,60 +59,91 @@ object Generators {
     } yield result
   }
 
-  implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(for {
-    capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)
-    directionality <- Gen.oneOf(DirectionalityType.values().toIndexedSeq)
-    symmetricPath <- arbitrary[Boolean]
-    sourceStp <- Gen.oneOf("source-1", "source-2")
-    destStp <- Gen.oneOf("dest-1", "dest-2")
-  } yield new P2PServiceBaseType().withCapacity(capacity).withDirectionality(directionality).withSymmetricPath(symmetricPath).withSourceSTP(sourceStp).withDestSTP(destStp))
+  implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(
+    for {
+      capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)
+      directionality <- Gen.oneOf(DirectionalityType.values().toIndexedSeq)
+      symmetricPath <- arbitrary[Boolean]
+      sourceStp <- Gen.oneOf("source-1", "source-2")
+      destStp <- Gen.oneOf("dest-1", "dest-2")
+    } yield new P2PServiceBaseType()
+      .withCapacity(capacity)
+      .withDirectionality(directionality)
+      .withSymmetricPath(symmetricPath)
+      .withSourceSTP(sourceStp)
+      .withDestSTP(destStp)
+  )
 
-  implicit val ArbitrarySessionSecurityAttrType: Arbitrary[SessionSecurityAttrType] = Arbitrary(Gen.alphaStr.map { token =>
-    new SessionSecurityAttrType().withAttributeOrEncryptedAttribute(new AttributeType().withName("token").withAttributeValue(token))
-  })
+  implicit val ArbitrarySessionSecurityAttrType: Arbitrary[SessionSecurityAttrType] = Arbitrary(
+    Gen.alphaStr.map { token =>
+      new SessionSecurityAttrType().withAttributeOrEncryptedAttribute(
+        new AttributeType().withName("token").withAttributeValue(token)
+      )
+    }
+  )
 
   implicit val ArbitraryConnectionType: Arbitrary[ConnectionType] = Arbitrary(for {
     value <- Gen.oneOf("connection-type-1", "connection-type-2", "connection-type-3")
     index <- Gen.choose(0, 4)
   } yield new ConnectionType().withValue(value).withIndex(index))
 
-  implicit val ArbitraryReservationRequestCriteriaType: Arbitrary[ReservationRequestCriteriaType] = Arbitrary(for {
-    schedule <- arbitrary[ScheduleType]
-    serviceType <- Gen.oneOf("service-type-1", "service-type-2")
-    service <- arbitrary[P2PServiceBaseType]
-    version <- arbitrary[Option[Int]]
-  } yield new ReservationRequestCriteriaType()
-    .withSchedule(schedule)
-    .withServiceType(serviceType)
-    .withPointToPointService(service)
-    .withVersion(version.map(Integer.valueOf).orNull))
+  implicit val ArbitraryReservationRequestCriteriaType: Arbitrary[ReservationRequestCriteriaType] =
+    Arbitrary(
+      for {
+        schedule <- arbitrary[ScheduleType]
+        serviceType <- Gen.oneOf("service-type-1", "service-type-2")
+        service <- arbitrary[P2PServiceBaseType]
+        version <- arbitrary[Option[Int]]
+      } yield new ReservationRequestCriteriaType()
+        .withSchedule(schedule)
+        .withServiceType(serviceType)
+        .withPointToPointService(service)
+        .withVersion(version.map(Integer.valueOf).orNull)
+    )
 
-  implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] = Arbitrary(for {
-    schedule <- arbitrary[ScheduleType]
-    serviceType <- Gen.oneOf("service-type-1", "service-type-2")
-    service <- arbitrary[P2PServiceBaseType]
-    version <- arbitrary[Int]
-  } yield new ReservationConfirmCriteriaType()
-    .withSchedule(schedule)
-    .withServiceType(serviceType)
-    .withPointToPointService(service)
-    .withVersion(version))
+  implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] =
+    Arbitrary(
+      for {
+        schedule <- arbitrary[ScheduleType]
+        serviceType <- Gen.oneOf("service-type-1", "service-type-2")
+        service <- arbitrary[P2PServiceBaseType]
+        version <- arbitrary[Int]
+      } yield new ReservationConfirmCriteriaType()
+        .withSchedule(schedule)
+        .withServiceType(serviceType)
+        .withPointToPointService(service)
+        .withVersion(version)
+    )
 
   implicit val ArbitraryReserveType: Arbitrary[ReserveType] = Arbitrary(for {
     criteria <- arbitrary[ReservationRequestCriteriaType]
   } yield new ReserveType().withCriteria(criteria))
 
-  implicit val ArbitraryNsiHeaders: Arbitrary[NsiHeaders] = Arbitrary(for {
-    correlationId <- arbitrary[CorrelationId]
-    requesterNsa <- Gen.alphaStr
-    providerNsa <- Gen.alphaStr
-    replyTo <- arbitrary[Option[URI]]
-    protocolVersion <- arbitrary[URI]
-    securityAttributes <- Gen.resize(3, Gen.listOf(arbitrary[SessionSecurityAttrType]))
-  } yield NsiHeaders(correlationId, requesterNsa, providerNsa, replyTo, protocolVersion, securityAttributes))
+  implicit val ArbitraryNsiHeaders: Arbitrary[NsiHeaders] = Arbitrary(
+    for {
+      correlationId <- arbitrary[CorrelationId]
+      requesterNsa <- Gen.alphaStr
+      providerNsa <- Gen.alphaStr
+      replyTo <- arbitrary[Option[URI]]
+      protocolVersion <- arbitrary[URI]
+      securityAttributes <- Gen.resize(3, Gen.listOf(arbitrary[SessionSecurityAttrType]))
+    } yield NsiHeaders(
+      correlationId,
+      requesterNsa,
+      providerNsa,
+      replyTo,
+      protocolVersion,
+      securityAttributes
+    )
+  )
 
-  implicit val ArbitraryInitialReserve: Arbitrary[InitialReserve] = Arbitrary(Gen.resultOf(InitialReserve.apply _))
+  implicit val ArbitraryInitialReserve: Arbitrary[InitialReserve] = Arbitrary(
+    Gen.resultOf(InitialReserve.apply _)
+  )
 
-  implicit val ArbitraryNsiProviderOperation: Arbitrary[NsiProviderOperation] = Arbitrary(arbitrary[InitialReserve])
-  implicit def ArbitraryFromProviderMessage[A <: NsiOperation: Arbitrary]: Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))
+  implicit val ArbitraryNsiProviderOperation: Arbitrary[NsiProviderOperation] = Arbitrary(
+    arbitrary[InitialReserve]
+  )
+  implicit def ArbitraryFromProviderMessage[A <: NsiOperation: Arbitrary]
+      : Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))
 }

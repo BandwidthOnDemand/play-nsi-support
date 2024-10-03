@@ -39,29 +39,22 @@ package object utils {
     else throw new IllegalArgumentException(f"classpath resource '$name' not found")
   }
 
-  implicit class AnyOps[A](a: A) {
+  extension [A](a: A) {
     def tap[B](f: A => B): A = { f(a); a }
     def pp: A = { Console.err.println(a); a }
     def pp(prefix: String): A = { Console.err.println(s"$prefix: $a"); a }
   }
 
-  implicit class OptionOps[A](value: Option[A]) {
+  extension [A](value: Option[A]) {
     def toTry(ifNone: => Throwable): Try[A] = value.map(Success(_)).getOrElse(Failure(ifNone))
     def toTry(ifNone: String): Try[A] =
       value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
   }
 
-  implicit class OptionTryOps[A](value: Option[Try[A]]) {
+  extension [A](value: Option[Try[A]]) {
     def sequence: Try[Option[A]] = value match {
       case None    => Success(None)
       case Some(t) => t.map(Some(_))
-    }
-  }
-
-  implicit class TryOps[A](a: Try[A]) {
-    def toEither: Either[Throwable, A] = a match {
-      case Failure(t) => Left(t)
-      case Success(a) => Right(a)
     }
   }
 
@@ -71,7 +64,7 @@ package object utils {
 
   val utc: ZoneId = ZoneId.of("Z")
 
-  implicit class InstantOps(instant: java.time.Instant) {
+  extension (instant: java.time.Instant) {
     def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
 
     def toXMLFormat(zoneId: ZoneId = utc): String = toXMLGregorianCalendar(zoneId).toXMLFormat
@@ -85,7 +78,7 @@ package object utils {
     }
   }
 
-  implicit class NillableOps[T](nillable: Nillable[T]) {
+  extension [T](nillable: Nillable[T]) {
     private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] {
       def apply(a: A) = f(a)
     }
@@ -98,7 +91,7 @@ package object utils {
     def toOption(nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
   }
 
-  implicit class ScheduleTypeOps(schedule: ScheduleType) {
+  extension (schedule: ScheduleType) {
     def startTime: Nillable[Instant] =
       Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
     def endTime: Nillable[Instant] =

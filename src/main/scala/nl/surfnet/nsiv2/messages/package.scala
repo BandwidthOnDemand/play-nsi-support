@@ -92,13 +92,13 @@ package object messages {
     "error.expected.correlationId"
   )(parse = CorrelationId.fromString, print = _.toString)
 
-  implicit class XmlGregorianCalendarOps(cal: XMLGregorianCalendar) {
+  extension (cal: XMLGregorianCalendar) {
     def toInstant: Instant = {
       cal.toGregorianCalendar.toZonedDateTime.toInstant
     }
   }
 
-  implicit class HasXmlAnyOps[A: HasXmlAny](a: A) {
+  extension [A: HasXmlAny](a: A) {
     def any: XmlAny = HasXmlAny[A].any(a)
 
     def findAny[T: ClassTag](nullElement: JAXBElement[T]): List[T] =
@@ -107,9 +107,7 @@ package object messages {
       HasXmlAny[A].findFirstAny(a, nullElement)
     def removeAny(nullElement: JAXBElement[?]): Boolean = HasXmlAny[A].removeAny(a, nullElement)
     def updateAny(element: JAXBElement[?]): Unit = HasXmlAny[A].updateAny(a, element)
-  }
 
-  implicit class XmlPointToPointServiceOps[A: HasXmlAny](a: A) {
     def withPointToPointService(service: P2PServiceBaseType): A = {
       HasXmlAny[A].updateAny(a, PointToPointObjectFactory.createP2Ps(service))
       a
@@ -141,7 +139,7 @@ package object messages {
     }
 
     def protectionType: Option[ProtectionType] =
-      parameters(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
+      parameters.apply(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
 
     def protectionType_=(protection: Option[ProtectionType]): Unit = {
       parameters(PROTECTION_PARAMETER_TYPE) = protection.map(_.toString)
@@ -156,9 +154,7 @@ package object messages {
     }
   }
 
-  implicit class ReservationRequestCriteriaTypeOps(
-      requestCriteria: ReservationRequestCriteriaType
-  ) {
+  extension (requestCriteria: ReservationRequestCriteriaType) {
     def toModifiedConfirmCriteria(
         previouslyCommittedCriteria: ReservationConfirmCriteriaType
     ): Try[ReservationConfirmCriteriaType] = for {
@@ -239,7 +235,7 @@ package object messages {
     }
   }
 
-  implicit class ReservationConfirmCriteriaTypeOps(criteria: ReservationConfirmCriteriaType) {
+  extension (criteria: ReservationConfirmCriteriaType) {
 
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
@@ -247,13 +243,13 @@ package object messages {
     def version: Int = criteria.getVersion
   }
 
-  implicit class QuerySummaryResultCriteriaTypeOps(criteria: QuerySummaryResultCriteriaType) {
+  extension (criteria: QuerySummaryResultCriteriaType) {
 
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
   }
 
-  implicit class ShallowCopyOps[A: ShallowCopyable](a: A) {
+  extension [A: ShallowCopyable](a: A) {
     def shallowCopy: A = ShallowCopyable[A].shallowCopy(a)
   }
 
@@ -275,7 +271,7 @@ package object messages {
       new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
   }
 
-  private[messages] implicit class RichString(str: String) {
+  extension (str: String) {
     def uncapitalize: String = str.take(1).toLowerCase + str.drop(1)
   }
 }

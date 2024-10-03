@@ -73,16 +73,18 @@ case class NsiHeaders(
       .findFirst(NsiHeaders.NullConnectionTraceElement)
       .map(_.getConnection.asScala.toList) getOrElse Nil
 
-  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any = if trace.isEmpty
-  then {
-    any.remove(NsiHeaders.NullConnectionTraceElement)
-  } else {
-    any.update(
-      NsiHeaders.gnsFactory.createConnectionTrace(
-        new ConnectionTraceType().withConnection(trace.asJava)
+  def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any =
+    if trace.isEmpty
+    then {
+      any.remove(NsiHeaders.NullConnectionTraceElement)
+    } else {
+      any.update(
+        NsiHeaders.gnsFactory.createConnectionTrace(
+          new ConnectionTraceType().withConnection(trace.asJava)
+        )
       )
-    )
-  })
+    }
+  )
 
   def addConnectionTrace(value: String): NsiHeaders = {
     val oldTrace = connectionTrace

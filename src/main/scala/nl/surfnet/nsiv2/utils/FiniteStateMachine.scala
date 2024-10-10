@@ -88,7 +88,7 @@ abstract class FiniteStateMachine[S, D, I, O](initialStateName: S, initialStateD
   /** This extractor is just convenience for matching a (S, S) pair, including a reminder what the
     * new state is.
     */
-  protected[this] object -> :
+  protected[this] object `->`:
     def unapply(in: (S, S)) = Some(in)
 
   private var _stateName: S = initialStateName

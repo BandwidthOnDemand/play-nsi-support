@@ -286,7 +286,8 @@ class NsiSoapConversionsSpec extends mutable.Specification:
           <soapenv:Body>{reserveBody}</soapenv:Body>
         </soapenv:Envelope>
 
-      val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
+      val Success(reserveMessage) =
+        providerOperationToStringConversion.invert(input.toString): @unchecked
 
       reserveMessage must beLike { case NsiProviderMessage(headers: NsiHeaders, _) =>
         headers.sessionSecurityAttrs must contain(like[SessionSecurityAttrType] { case attrs =>
@@ -294,7 +295,7 @@ class NsiSoapConversionsSpec extends mutable.Specification:
         }).exactly(1)
       }
 
-      val Success(output) = providerOperationToStringConversion.apply(reserveMessage)
+      val Success(output) = providerOperationToStringConversion.apply(reserveMessage): @unchecked
 
       output must contain(token)
       output must contain(user)
@@ -322,7 +323,8 @@ class NsiSoapConversionsSpec extends mutable.Specification:
           <soapenv:Body>{reserveBody}</soapenv:Body>
         </soapenv:Envelope>
 
-      val Success(reserveMessage) = providerOperationToStringConversion.invert(input.toString)
+      val Success(reserveMessage) =
+        providerOperationToStringConversion.invert(input.toString): @unchecked
 
       reserveMessage must beLike { case NsiProviderMessage(headers: NsiHeaders, _) =>
         headers.any.elements must haveSize(1)
@@ -345,7 +347,7 @@ class NsiSoapConversionsSpec extends mutable.Specification:
         )
       }
 
-      val Success(output) = providerOperationToStringConversion.apply(reserveMessage)
+      val Success(output) = providerOperationToStringConversion.apply(reserveMessage): @unchecked
 
       output must contain(
         <Connection index="1">urn:ogf:network:es.net:2001:nsa:nsi-requester:1234567890</Connection>.toString
@@ -396,10 +398,10 @@ class NsiSoapConversionsSpec extends mutable.Specification:
           </soapenv:Body>
         </soapenv:Envelope>.toString
 
-      val Success(dom) = NsiXmlDocumentConversion.invert(ByteString(input))
+      val Success(dom) = NsiXmlDocumentConversion.invert(ByteString(input)): @unchecked
       dom.getDocumentElement().getLocalName() must beEqualTo("Envelope")
 
-      val Success(output) = NsiXmlDocumentConversion(dom)
+      val Success(output) = NsiXmlDocumentConversion(dom): @unchecked
       output.utf8String must contain("urn:uuid:5c716e15-c17c-481e-885d-c9a5c06e0436")
     }
   }
@@ -452,8 +454,8 @@ class NsiSoapConversionsSpec extends mutable.Specification:
 
       val converter =
         NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(NsiXmlDocumentConversion)
-      val Success(doc) = converter.invert(ByteString(input))
-      val Success(arr) = converter(doc)
+      val Success(doc) = converter.invert(ByteString(input)): @unchecked
+      val Success(arr) = converter(doc): @unchecked
 
       converter.invert(arr) must beSuccessfulTry
     }

@@ -23,7 +23,6 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
-import java.util.function.Predicate
 import javax.xml.datatype.XMLGregorianCalendar
 import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.connection.types.QuerySummaryResultCriteriaType
@@ -36,7 +35,6 @@ import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
-import jakarta.xml.bind.JAXBElement
 import scala.reflect.ClassTag
 import java.time.Instant
 import javax.xml.namespace.QName
@@ -99,22 +97,12 @@ package object messages {
   }
 
   extension [A: HasXmlAny](a: A) {
-    def any: XmlAny = HasXmlAny[A].any(a)
-
-    def findAny[T: ClassTag](nullElement: JAXBElement[T]): List[T] =
-      HasXmlAny[A].findAny(a, nullElement)
-    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]): Option[T] =
-      HasXmlAny[A].findFirstAny(a, nullElement)
-    def removeAny(nullElement: JAXBElement[?]): Boolean = HasXmlAny[A].removeAny(a, nullElement)
-    def updateAny(element: JAXBElement[?]): Unit = HasXmlAny[A].updateAny(a, element)
-
     def withPointToPointService(service: P2PServiceBaseType): A = {
-      HasXmlAny[A].updateAny(a, PointToPointObjectFactory.createP2Ps(service))
+      a.updateAny(PointToPointObjectFactory.createP2Ps(service))
       a
     }
 
-    def pointToPointService: Option[P2PServiceBaseType] =
-      HasXmlAny[A].findFirstAny(a, NULL_P2PS_ELEMENT)
+    def pointToPointService: Option[P2PServiceBaseType] = a.findFirstAny(NULL_P2PS_ELEMENT)
   }
 
   final val PROTECTION_PARAMETER_TYPE = "protection"
@@ -129,9 +117,7 @@ package object messages {
       }
 
       def update(`type`: String, value: Option[String]): Unit = {
-        service.getParameter.removeIf(new Predicate[TypeValueType] {
-          def test(v: TypeValueType) = v.getType == `type`
-        })
+        service.getParameter.removeIf(v => v.getType == `type`)
         value.foreach { value =>
           service.getParameter.add(new TypeValueType().withType(`type`).withValue(value))
         }
@@ -247,28 +233,6 @@ package object messages {
 
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
-  }
-
-  extension [A: ShallowCopyable](a: A) {
-    def shallowCopy: A = ShallowCopyable[A].shallowCopy(a)
-  }
-
-  implicit val P2PServiceBaseTypeShallowCopyable: ShallowCopyable[P2PServiceBaseType] =
-    ShallowCopyable.build { a =>
-      new P2PServiceBaseType()
-        .withAny(a.getAny)
-        .withCapacity(a.getCapacity)
-        .withDestSTP(a.getDestSTP)
-        .withDirectionality(a.getDirectionality)
-        .withEro(a.getEro)
-        .withParameter(a.getParameter)
-        .withSourceSTP(a.getSourceSTP)
-        .withSymmetricPath(a.isSymmetricPath)
-    }
-
-  implicit val ScheduleTypeShallowCopyable: ShallowCopyable[ScheduleType] = ShallowCopyable.build {
-    a =>
-      new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)
   }
 
   extension (str: String) {

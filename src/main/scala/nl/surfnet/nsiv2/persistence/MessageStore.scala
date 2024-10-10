@@ -41,7 +41,14 @@ import scala.util.{Try, Success, Failure}
 
 case class MessageData(correlationId: Option[CorrelationId], tpe: String, content: String)
 object MessageData {
-  def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Format[A] = new Format[A] {
+  def formatJson[T: Writes](value: T): String = Json.stringify(Json.toJson(value))
+  def parseJson[T: Reads](json: String): Try[T] = Json
+    .parse(json)
+    .validate[T]
+    .fold(errors => Failure(ErrorMessage(errors.mkString(", "))), ok => Success(ok))
+}
+private def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Format[A] =
+  new Format[A] {
     override def reads(js: JsValue): JsResult[A] = Json.fromJson[B](js).flatMap { b =>
       conversion
         .invert(b)
@@ -51,32 +58,25 @@ object MessageData {
     override def writes(a: A): JsValue = Json.toJson(conversion(a).get)
   }
 
-  def formatJson[T: Writes](value: T): String = Json.stringify(Json.toJson(value))
-  def parseJson[T: Reads](json: String): Try[T] = Json
-    .parse(json)
-    .validate[T]
-    .fold(errors => Failure(ErrorMessage(errors.mkString(", "))), ok => Success(ok))
-
-  implicit val NsiProviderOperationFormat: Format[NsiProviderMessage[NsiProviderOperation]] =
-    conversionToFormat(
-      NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(DocumentToString)
-    )
-  implicit val NsiProviderAckFormat: Format[NsiProviderMessage[NsiAcknowledgement]] =
-    conversionToFormat(
-      NsiProviderMessageToDocument[NsiAcknowledgement](None).andThen(DocumentToString)
-    )
-  implicit val NsiRequesterOperationFormat: Format[NsiRequesterMessage[NsiRequesterOperation]] =
-    conversionToFormat(
-      NsiRequesterMessageToDocument[NsiRequesterOperation](None).andThen(DocumentToString)
-    )
-
-  implicit val NsiHeadersFormat: Format[NsiHeaders] = conversionToFormat(
-    Conversion[NsiHeaders, String]
+given NsiProviderOperationFormat: Format[NsiProviderMessage[NsiProviderOperation]] =
+  conversionToFormat(
+    NsiProviderMessageToDocument[NsiProviderOperation](None).andThen(DocumentToString)
   )
-  implicit val ServiceExceptionTypeFormat: Format[ServiceExceptionType] = conversionToFormat(
-    Conversion[ServiceExceptionType, String]
+given NsiProviderAckFormat: Format[NsiProviderMessage[NsiAcknowledgement]] =
+  conversionToFormat(
+    NsiProviderMessageToDocument[NsiAcknowledgement](None).andThen(DocumentToString)
   )
-}
+given NsiRequesterOperationFormat: Format[NsiRequesterMessage[NsiRequesterOperation]] =
+  conversionToFormat(
+    NsiRequesterMessageToDocument[NsiRequesterOperation](None).andThen(DocumentToString)
+  )
+
+given NsiHeadersFormat: Format[NsiHeaders] = conversionToFormat(
+  Conversion[NsiHeaders, String]
+)
+given ServiceExceptionTypeFormat: Format[ServiceExceptionType] = conversionToFormat(
+  Conversion[ServiceExceptionType, String]
+)
 
 case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T) {
   def map[B](f: T => B): MessageRecord[B] = copy(message = f(message))

@@ -36,7 +36,7 @@ import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.Schema
-import nl.surfnet.nsiv2.messages.*
+import nl.surfnet.nsiv2.messages.{given, *}
 import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.connection.types.*
 import org.ogf.schemas.nsi._2013._12.framework.headers.CommonHeaderType

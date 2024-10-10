@@ -23,13 +23,27 @@
 package nl.surfnet.nsiv2
 package messages
 
-trait ShallowCopyable[A] {
-  def shallowCopy(a: A): A
-}
-object ShallowCopyable {
-  def apply[A](implicit instance: ShallowCopyable[A]) = instance
+import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
+import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 
-  def build[A](f: A => A): ShallowCopyable[A] = new ShallowCopyable[A] {
-    override def shallowCopy(a: A): A = f(a)
-  }
+trait ShallowCopyable[A] {
+  extension (a: A) def shallowCopy: A
 }
+
+given ShallowCopyable[P2PServiceBaseType] with
+  extension (a: P2PServiceBaseType)
+    def shallowCopy = {
+      new P2PServiceBaseType()
+        .withAny(a.getAny)
+        .withCapacity(a.getCapacity)
+        .withDestSTP(a.getDestSTP)
+        .withDirectionality(a.getDirectionality)
+        .withEro(a.getEro)
+        .withParameter(a.getParameter)
+        .withSourceSTP(a.getSourceSTP)
+        .withSymmetricPath(a.isSymmetricPath)
+    }
+
+given ShallowCopyable[ScheduleType] with
+  extension (a: ScheduleType)
+    def shallowCopy = new ScheduleType().withStartTime(a.getStartTime).withEndTime(a.getEndTime)

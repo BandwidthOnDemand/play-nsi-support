@@ -57,9 +57,9 @@ class XmlAny private (val elements: List[AnyRef]) {
     case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
   }
 
-  def remove(nullElement: JAXBElement[?]): XmlAny = XmlAny(elements filter {
-    case element: JAXBElement[?] if element.getName() == nullElement.getName => false
-    case _                                                                   => true
+  def remove(nullElement: JAXBElement[?]): XmlAny = XmlAny(elements filterNot {
+    case element: JAXBElement[?] => element.getName() == nullElement.getName
+    case _                       => false
   })
 
   def update(element: JAXBElement[?]): XmlAny = XmlAny(element :: remove(element).elements)
@@ -88,46 +88,36 @@ object XmlAny {
 /** Type class for JAXB generated types that have an XML any element.
   */
 trait HasXmlAny[A] {
-  def getAny(a: A): java.util.List[AnyRef]
-  def any(a: A): XmlAny = XmlAny(getAny(a).asScala.toList)
+  extension (a: A)
+    def getAny: java.util.List[AnyRef]
 
-  def findAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): List[T] = getAny(a).asScala.collect {
-    case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
-  }.toList
+    def any: XmlAny = XmlAny(getAny.asScala.toList)
 
-  def findFirstAny[T: ClassTag](a: A, nullElement: JAXBElement[T]): Option[T] =
-    getAny(a).asScala collectFirst {
+    def findAny[T: ClassTag](nullElement: JAXBElement[T]): List[T] = getAny.asScala.collect {
       case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
-    }
+    }.toList
 
-  def removeAny(a: A, nullElement: JAXBElement[?]): Boolean =
-    getAny(a).removeIf(new java.util.function.Predicate[AnyRef]() {
-      override def test(any: AnyRef): Boolean = any match {
-        case element: JAXBElement[?] if element.getName() == nullElement.getName =>
-          true
-        case _ =>
-          false
+    def findFirstAny[T: ClassTag](nullElement: JAXBElement[T]): Option[T] =
+      getAny.asScala collectFirst {
+        case XmlAny.Element(name, Some(value: T)) if name == nullElement.getName() => value
       }
-    })
 
-  def updateAny(a: A, element: JAXBElement[?]): Unit = {
-    removeAny(a, element)
-    getAny(a).add(element)
-    ()
-  }
+    def removeAny(nullElement: JAXBElement[?]): Boolean =
+      getAny.removeIf({
+        case element: JAXBElement[?] => element.getName() == nullElement.getName
+        case _                       => false
+      })
+
+    def updateAny(element: JAXBElement[?]): Unit = {
+      removeAny(element)
+      getAny.add(element)
+    }
 }
-object HasXmlAny {
-  def apply[A](implicit hasXmlAny: HasXmlAny[A]) = hasXmlAny
-
-  private def build[A](get: A => java.util.List[AnyRef]): HasXmlAny[A] = new HasXmlAny[A] {
-    def getAny(a: A) = get(a)
-  }
-
-  implicit val ChildSummaryType: HasXmlAny[ChildSummaryType] = build(_.getAny)
-  implicit val QuerySummaryResultCriteriaType: HasXmlAny[QuerySummaryResultCriteriaType] =
-    build(_.getAny)
-  implicit val ReservationConfirmCriteriaType: HasXmlAny[ReservationConfirmCriteriaType] =
-    build(_.getAny)
-  implicit val ReservationRequestCriteriaType: HasXmlAny[ReservationRequestCriteriaType] =
-    build(_.getAny)
-}
+given HasXmlAny[ChildSummaryType] with
+  extension (a: ChildSummaryType) def getAny = a.getAny
+given HasXmlAny[QuerySummaryResultCriteriaType] with
+  extension (a: QuerySummaryResultCriteriaType) def getAny = a.getAny
+given HasXmlAny[ReservationConfirmCriteriaType] with
+  extension (a: ReservationConfirmCriteriaType) def getAny = a.getAny
+given HasXmlAny[ReservationRequestCriteriaType] with
+  extension (a: ReservationRequestCriteriaType) def getAny = a.getAny

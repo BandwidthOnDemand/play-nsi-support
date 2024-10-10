@@ -43,7 +43,7 @@ class ExtraBodyParsers(implicit
     ec: ExecutionContext,
     bodyParsers: PlayBodyParsers,
     actionBuilder: ActionBuilder[Request, AnyContent]
-) {
+):
   private val logger = Logger(classOf[ExtraBodyParsers])
 
   type NsiRequesterAction =
@@ -88,9 +88,9 @@ class ExtraBodyParsers(implicit
   private def validateProviderNsa(
       providerNsa: String,
       action: NsiProviderAction
-  ): NsiProviderAction = { message =>
+  ): NsiProviderAction = message =>
     if message.headers.providerNSA == providerNsa then action(message)
-    else {
+    else
       logger.info(
         s"The providerNSA '${message.headers.providerNSA}' does not match the expected providerNSA '$providerNsa'"
       )
@@ -100,15 +100,13 @@ class ExtraBodyParsers(implicit
       )
       val response = message.ackWithCorrectedProviderNsa(providerNsa, serviceException)
       Future.successful(response)
-    }
-  }
 
   private def validateRequesterNsa(
       requesterNsa: String,
       action: NsiRequesterAction
-  ): NsiRequesterAction = { message =>
+  ): NsiRequesterAction = message =>
     if message.headers.requesterNSA == requesterNsa then action(message)
-    else {
+    else
       logger.info(
         s"The requesterNSA '${message.headers.requesterNSA}' does not match the expected requesterNSA '$requesterNsa'"
       )
@@ -120,8 +118,6 @@ class ExtraBodyParsers(implicit
       )
       val response = message.ackWithCorrectedRequesterNsa(requesterNsa, serviceException)
       Future.successful(response)
-    }
-  }
 
   def NsiEndPoint[M <: NsiOperation, T[_ <: NsiOperation] <: NsiMessage[_]](
       parser: BodyParser[T[M]]
@@ -208,7 +204,7 @@ class ExtraBodyParsers(implicit
 
         logger.debug(s"Received (${requestHeader.uri}): $parsedMessage")
 
-        parsedMessage match {
+        parsedMessage match
           case Failure(error) =>
             logger.warn(s"Failed to parse $soapMessage with $error on ${requestHeader.uri}", error)
             Left(
@@ -228,7 +224,7 @@ class ExtraBodyParsers(implicit
 
           case Success(body) =>
             Right(body)
-        }
+        end match
     }
   }
-}
+end ExtraBodyParsers

@@ -29,26 +29,21 @@ import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteria
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import org.ogf.schemas.nsi._2013._12.services.types.TypeValueType
 
-sealed trait NsiProviderOperation extends NsiOperation {
+sealed trait NsiProviderOperation extends NsiOperation:
   def action: String = this.getClass().getSimpleName()
-  final def soapActionUrl: String = {
+  final def soapActionUrl: String =
     s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"
-  }
-}
 
 sealed trait NsiProviderQuery extends NsiProviderOperation
-sealed trait NsiProviderCommand extends NsiProviderOperation {
+sealed trait NsiProviderCommand extends NsiProviderOperation:
   def optionalConnectionId: Option[ConnectionId]
-}
-sealed trait NsiProviderUpdateCommand extends NsiProviderCommand {
+sealed trait NsiProviderUpdateCommand extends NsiProviderCommand:
   def connectionId: ConnectionId
   override def optionalConnectionId: Option[ConnectionId] = Some(connectionId)
-}
 
-sealed trait Reserve extends NsiProviderCommand {
+sealed trait Reserve extends NsiProviderCommand:
   override def action = "Reserve"
-}
-case class InitialReserve(body: ReserveType) extends Reserve {
+case class InitialReserve(body: ReserveType) extends Reserve:
   override def optionalConnectionId: Option[ConnectionId] = None
 
   def criteria: ReservationRequestCriteriaType = body.getCriteria
@@ -56,11 +51,9 @@ case class InitialReserve(body: ReserveType) extends Reserve {
     criteria.any.findFirst(InitialReserve.NULL_P2PS_SERVICE_BASE_TYPE)
 
   require(body.getConnectionId eq null, "initial reserve must not have connectionId")
-}
-object InitialReserve {
+object InitialReserve:
   private val NULL_P2PS_SERVICE_BASE_TYPE = PointToPointObjectFactory.createP2Ps(null)
-}
-case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpdateCommand {
+case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpdateCommand:
   def connectionId = body.getConnectionId
 
   def criteria: ReservationRequestCriteriaType = body.getCriteria
@@ -71,11 +64,9 @@ case class ModifyReserve(body: ReserveType) extends Reserve with NsiProviderUpda
   def parameters: Seq[TypeValueType] = criteria.any.find(ModifyReserve.NULL_PARAMETER_P2PS_ELEMENT)
 
   require(connectionId ne null, "modify must have connectionId")
-}
-object ModifyReserve {
+object ModifyReserve:
   private val NULL_CAPACITY_P2PS_ELEMENT = PointToPointObjectFactory.createCapacity(null)
   private val NULL_PARAMETER_P2PS_ELEMENT = PointToPointObjectFactory.createParameter(null)
-}
 
 case class ReserveCommit(connectionId: ConnectionId) extends NsiProviderUpdateCommand
 case class ReserveAbort(connectionId: ConnectionId) extends NsiProviderUpdateCommand

@@ -9,16 +9,17 @@ import scala.collection.immutable.SortedMap
 import org.specs2.matcher.Matcher
 
 @org.junit.runner.RunWith(classOf[org.specs2.runner.JUnitRunner])
-class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaCheck { outer =>
+class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaCheck:
+  outer =>
   private def stp(s: String): Stp = Stp.fromString(s).get
   private def vlan(s: String): VlanRange = VlanRange.fromString(s).get
 
   private val GenVlanId = Gen.chooseNum(2, 4095).map(Integer.valueOf)
 
-  private implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(for {
+  private implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(for
     identifier <- arbitrary[String] if identifier.nonEmpty
     labels <- arbitrary[Seq[Stp.Label]] if labels.forall(label => label._1.nonEmpty)
-  } yield Stp(identifier, SortedMap(labels*)))
+  yield Stp(identifier, SortedMap(labels*)))
 
   private implicit val ArbitraryVlanRange: Arbitrary[VlanRange] = Arbitrary(
     Gen
@@ -26,13 +27,12 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       .map(VlanRange.apply)
   )
 
-  private def beCompatibleWith(target: Stp): Matcher[Stp] = { (source: Stp) =>
+  private def beCompatibleWith(target: Stp): Matcher[Stp] = (source: Stp) =>
     (
       source isCompatibleWith target,
       s"$source is compatible with $target",
       s"$source is not compatible with $target"
     )
-  }
 
   "VlanRange" should {
     "print and parse" in prop { (vlanRange: VlanRange) =>
@@ -159,4 +159,4 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
       )
     }
   }
-}
+end StpSpec

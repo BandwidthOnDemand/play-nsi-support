@@ -40,15 +40,14 @@ import play.api.libs.json.*
 import scala.util.{Try, Success, Failure}
 
 case class MessageData(correlationId: Option[CorrelationId], tpe: String, content: String)
-object MessageData {
+object MessageData:
   def formatJson[T: Writes](value: T): String = Json.stringify(Json.toJson(value))
   def parseJson[T: Reads](json: String): Try[T] = Json
     .parse(json)
     .validate[T]
     .fold(errors => Failure(ErrorMessage(errors.mkString(", "))), ok => Success(ok))
-}
 private def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Format[A] =
-  new Format[A] {
+  new Format[A]:
     override def reads(js: JsValue): JsResult[A] = Json.fromJson[B](js).flatMap { b =>
       conversion
         .invert(b)
@@ -56,7 +55,6 @@ private def conversionToFormat[A, B: Format](conversion: Conversion[A, B]): Form
         .fold(error => JsError(JsonValidationError("error.conversion.failed", error)), JsSuccess(_))
     }
     override def writes(a: A): JsValue = Json.toJson(conversion(a).get)
-  }
 
 given NsiProviderOperationFormat: Format[NsiProviderMessage[NsiProviderOperation]] =
   conversionToFormat(
@@ -78,13 +76,12 @@ given ServiceExceptionTypeFormat: Format[ServiceExceptionType] = conversionToFor
   Conversion[ServiceExceptionType, String]
 )
 
-case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T) {
+case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T):
   def map[B](f: T => B): MessageRecord[B] = copy(message = f(message))
-}
 
 class MessageStore[M] @Inject() (database: Database)(implicit
     conversion: Conversion[M, MessageData]
-) {
+):
   private val logger = Logger(classOf[MessageStore[?]])
 
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit =
@@ -187,7 +184,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(
       implicit connection: Connection
-  ) = {
+  ) =
     val serialized = conversion(message).get
     import serialized.*
     SQL"""
@@ -198,5 +195,4 @@ class MessageStore[M] @Inject() (database: Database)(implicit
        """
       .executeInsert()
       .getOrElse(sys.error("insert failed to generate primary key"))
-  }
-}
+end MessageStore

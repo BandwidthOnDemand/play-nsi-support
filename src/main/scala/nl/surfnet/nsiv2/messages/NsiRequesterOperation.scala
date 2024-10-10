@@ -25,29 +25,24 @@ package nl.surfnet.nsiv2.messages
 import javax.xml.datatype.XMLGregorianCalendar
 import org.ogf.schemas.nsi._2013._12.connection.types.*
 
-sealed trait NsiRequesterOperation extends NsiOperation {
+sealed trait NsiRequesterOperation extends NsiOperation:
   final def action: String = this.getClass().getSimpleName()
   final def soapActionUrl: String =
     s"http://schemas.ogf.org/nsi/2013/12/connection/service/${action.uncapitalize}"
-}
-sealed trait NsiRequesterUpdate extends NsiRequesterOperation {
+sealed trait NsiRequesterUpdate extends NsiRequesterOperation:
   def connectionId: ConnectionId;
-}
-sealed trait NsiNotification extends NsiRequesterUpdate {
+sealed trait NsiNotification extends NsiRequesterUpdate:
   def notification: NotificationBaseType
-}
 sealed trait NsiCommandReply extends NsiRequesterUpdate
 
 case class ReserveConfirmed(connectionId: ConnectionId, criteria: ReservationConfirmCriteriaType)
     extends NsiCommandReply
-case class ReserveFailed(failed: GenericFailedType) extends NsiCommandReply {
+case class ReserveFailed(failed: GenericFailedType) extends NsiCommandReply:
   def connectionId: ConnectionId = failed.getConnectionId()
-}
 
 case class ReserveCommitConfirmed(connectionId: ConnectionId) extends NsiCommandReply
-case class ReserveCommitFailed(failed: GenericFailedType) extends NsiCommandReply {
+case class ReserveCommitFailed(failed: GenericFailedType) extends NsiCommandReply:
   def connectionId: ConnectionId = failed.getConnectionId()
-}
 
 case class ReserveAbortConfirmed(connectionId: ConnectionId) extends NsiCommandReply
 
@@ -67,19 +62,15 @@ case class QueryResultConfirmed(results: Seq[QueryResultResponseType]) extends N
 
 case class ErrorReply(error: GenericErrorType) extends NsiRequesterOperation
 
-case class ErrorEvent(override val notification: ErrorEventType) extends NsiNotification {
+case class ErrorEvent(override val notification: ErrorEventType) extends NsiNotification:
   override def connectionId: String = notification.getConnectionId()
-}
 case class DataPlaneStateChange(override val notification: DataPlaneStateChangeRequestType)
-    extends NsiNotification {
+    extends NsiNotification:
   def connectionId: ConnectionId = notification.getConnectionId()
-}
 case class ReserveTimeout(override val notification: ReserveTimeoutRequestType)
-    extends NsiNotification {
+    extends NsiNotification:
   def connectionId: ConnectionId = notification.getConnectionId()
-}
 
 case class MessageDeliveryTimeout(override val notification: MessageDeliveryTimeoutRequestType)
-    extends NsiNotification {
+    extends NsiNotification:
   def connectionId: ConnectionId = notification.getConnectionId()
-}

@@ -33,7 +33,7 @@ import org.ogf.schemas.nsi._2015._04.connection.pathtrace.PathTraceType
 
 import scala.jdk.CollectionConverters.*
 
-object NsiHeaders {
+object NsiHeaders:
   val ProviderProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.provider+soap")
   val RequesterProtocolVersion: URI = URI.create("application/vnd.ogf.nsi.cs.v2.requester+soap")
 
@@ -46,7 +46,6 @@ object NsiHeaders {
 
   private val NullConnectionTraceElement = gnsFactory.createConnectionTrace(null)
   private val NullPathTraceElement = pathTraceFactory.createPathTrace(null)
-}
 case class NsiHeaders(
     correlationId: CorrelationId,
     requesterNSA: RequesterNsa,
@@ -56,7 +55,7 @@ case class NsiHeaders(
     sessionSecurityAttrs: List[SessionSecurityAttrType] = Nil,
     any: XmlAny = XmlAny.empty,
     otherAttributes: Map[QName, String] = Map.empty
-) {
+):
   def forSyncAck: NsiHeaders =
     NsiHeaders(correlationId, requesterNSA, providerNSA, None, protocolVersion)
 
@@ -75,32 +74,29 @@ case class NsiHeaders(
 
   def withConnectionTrace(trace: List[ConnectionType]): NsiHeaders = copy(any =
     if trace.isEmpty
-    then {
-      any.remove(NsiHeaders.NullConnectionTraceElement)
-    } else {
+    then any.remove(NsiHeaders.NullConnectionTraceElement)
+    else
       any.update(
         NsiHeaders.gnsFactory.createConnectionTrace(
           new ConnectionTraceType().withConnection(trace.asJava)
         )
       )
-    }
   )
 
-  def addConnectionTrace(value: String): NsiHeaders = {
+  def addConnectionTrace(value: String): NsiHeaders =
     val oldTrace = connectionTrace
     val index = if oldTrace.isEmpty then 0 else oldTrace.map(_.getIndex).max + 1
     val newTrace = new ConnectionType().withIndex(index).withValue(value) :: oldTrace
     withConnectionTrace(newTrace)
-  }
 
   def pathTrace: Option[PathTraceType] = any.findFirst(NsiHeaders.NullPathTraceElement)
 
   def withPathTrace(pathTrace: PathTraceType): NsiHeaders =
     copy(any = any.update(NsiHeaders.pathTraceFactory.createPathTrace(pathTrace)))
-}
+end NsiHeaders
 
 trait NsiOperation
-object NsiOperation {
+object NsiOperation:
   val CONNECTION_ID = new QName(QNAME_NSI_TYPES.getNamespaceURI, "connectionId")
 
   val START_TIME = new QName(QNAME_NSI_TYPES.getNamespaceURI, "startTime")
@@ -109,16 +105,14 @@ object NsiOperation {
   val CAPACITY = new QName(QNAME_NSI_POINT_TO_POINT.getNamespaceURI, "capacity")
 
   val CURRENT_TIME = new QName("currentTime")
-}
 
-sealed trait NsiMessage[+T <: NsiOperation] {
+sealed trait NsiMessage[+T <: NsiOperation]:
   def headers: NsiHeaders
   def body: T
   def correlationId: CorrelationId = headers.correlationId
-}
 
 final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, body: T)
-    extends NsiMessage[T] {
+    extends NsiMessage[T]:
   def ack[U <: NsiAcknowledgement](acknowledgement: U = GenericAck()): NsiProviderMessage[U] =
     ack(headers, acknowledgement)
 
@@ -136,10 +130,9 @@ final case class NsiProviderMessage[+T <: NsiOperation](headers: NsiHeaders, bod
 
   def reply(reply: NsiRequesterOperation): NsiRequesterMessage[NsiRequesterOperation] =
     NsiRequesterMessage(headers.forAsyncReply, reply)
-}
 
 final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, body: T)
-    extends NsiMessage[T] {
+    extends NsiMessage[T]:
   def ack(
       acknowledgement: NsiAcknowledgement = GenericAck()
   ): NsiRequesterMessage[NsiAcknowledgement] =
@@ -156,17 +149,16 @@ final case class NsiRequesterMessage[+T <: NsiOperation](headers: NsiHeaders, bo
       ackHeaders.forSyncAck.copy(protocolVersion = NsiHeaders.RequesterProtocolVersion),
       ack
     )
-}
 
 final case class NsiError(
     id: String,
     description: String,
     text: String,
     variables: Seq[(QName, String)]
-) {
+):
   override def toString: String = s"$id: $description: $text"
 
-  def toServiceException(nsaId: String, args: (QName, String)*): ServiceExceptionType = {
+  def toServiceException(nsaId: String, args: (QName, String)*): ServiceExceptionType =
     val variables = (this.variables ++ args) map { case (t, v) =>
       new TypeValuePairType().withNamespace(t.getNamespaceURI).withType(t.getLocalPart).withValue(v)
     }
@@ -176,14 +168,13 @@ final case class NsiError(
       .withText(text)
       .withNsaId(nsaId)
       .withVariables(new VariablesType().withVariable(variables.asJava))
-  }
 
   def withText(text: String, variables: (QName, String)*): NsiError =
     copy(text = text, variables = variables)
   def withVariables(variables: (QName, String)*): NsiError = copy(variables = variables)
-}
+end NsiError
 
-object NsiError {
+object NsiError:
   def apply(id: String, description: String, text: String) =
     new NsiError(id, description, text, Seq.empty)
 
@@ -334,5 +325,4 @@ object NsiError {
     "GENERIC_RM_ERROR",
     "An internal (N)RM error has caused a message processing failure"
   )
-
-}
+end NsiError

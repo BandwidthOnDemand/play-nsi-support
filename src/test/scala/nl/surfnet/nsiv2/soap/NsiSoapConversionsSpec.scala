@@ -13,7 +13,7 @@ import scala.util.Success
 import akka.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
-class NsiSoapConversionsSpec extends mutable.Specification {
+class NsiSoapConversionsSpec extends mutable.Specification:
   import NsiSoapConversions.*
 
   val DefaultAckHeaders: NsiHeaders = NsiHeaders(
@@ -458,4 +458,4 @@ class NsiSoapConversionsSpec extends mutable.Specification {
       converter.invert(arr) must beSuccessfulTry
     }
   }
-}
+end NsiSoapConversionsSpec

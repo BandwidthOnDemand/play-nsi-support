@@ -14,7 +14,7 @@ import play.api.db.Database
 
 abstract class MessageStoreSpecification
     extends org.specs2.mutable.Specification
-    with org.specs2.ScalaCheck {
+    with org.specs2.ScalaCheck:
   sequential
 
   private def newConnectionId = UUID.randomUUID.toString
@@ -24,27 +24,25 @@ abstract class MessageStoreSpecification
   implicit def MessageGenerator: Gen[Message]
 
   implicit def ArbitraryMessage: Arbitrary[Message] = Arbitrary(MessageGenerator)
-  implicit def ArbitraryMessageData: Arbitrary[(Message, MessageData)] = Arbitrary(for {
+  implicit def ArbitraryMessageData: Arbitrary[(Message, MessageData)] = Arbitrary(for
     message <- MessageGenerator
     data <- MessageConversion(message).map(Gen.const).getOrElse(Gen.fail)
-  } yield (message, data))
+  yield (message, data))
 
   implicit def shrinkMessage: Shrink[Message] = Shrink(_ => Stream.empty)
 
-  class Fixture extends WithApplication() {
+  class Fixture extends WithApplication():
     lazy val database: Database = Databases.inMemory()
     lazy val requesterNsa = "requester_msa"
     lazy val timestamp: Instant = Instant.now()
     lazy val aggregatedConnectionId = newConnectionId
-    lazy val messageStore: MessageStore[Message] = {
+    lazy val messageStore: MessageStore[Message] =
       val s = new MessageStore[Message](database)
       s.create(aggregatedConnectionId, timestamp, requesterNsa)
       s
-    }
-  }
 
   "MessageStore" should {
-    "fail to store message for unknown connection" in new Fixture() {
+    "fail to store message for unknown connection" in new Fixture():
       override def running() = prop { (message: Message) =>
         val unknownConnectionId = newConnectionId
 
@@ -55,9 +53,8 @@ abstract class MessageStoreSpecification
           Seq.empty
         ) must throwA[IllegalArgumentException]
       }.set(minTestsOk = 1)
-    }
 
-    "fail to store a message for a deleted connection" in new Fixture() {
+    "fail to store a message for a deleted connection" in new Fixture():
       override def running() = prop { (message: Message) =>
         messageStore.delete(aggregatedConnectionId, timestamp)
 
@@ -68,9 +65,8 @@ abstract class MessageStoreSpecification
           Seq.empty
         ) must throwA[IllegalArgumentException]
       }.set(minTestsOk = 1)
-    }
 
-    "append new messages at the end" in new Fixture {
+    "append new messages at the end" in new Fixture:
       override def running() = prop { (message: Message) =>
         messageStore.storeInboundWithOutboundMessages(
           aggregatedConnectionId,
@@ -83,9 +79,8 @@ abstract class MessageStoreSpecification
         loaded.map(_.createdAt).lastOption must beSome(timestamp)
         loaded.map(_.message).lastOption aka "last appended message" must beSome(message)
       }.set(minTestsOk = 10)
-    }
 
-    "retrieve based on correlation id" in new Fixture {
+    "retrieve based on correlation id" in new Fixture:
       override def running() = prop { (message: Message) =>
         withCorrelationId(message) { correlationId =>
           messageStore.storeInboundWithOutboundMessages(
@@ -99,10 +94,8 @@ abstract class MessageStoreSpecification
           loaded.map(_.message).lastOption aka "message" must beSome(message)
         }
       }.set(minTestsOk = 10)
-    }
   }
 
-  private def withCorrelationId(message: Message)(prop: CorrelationId => Prop): Prop = {
+  private def withCorrelationId(message: Message)(prop: CorrelationId => Prop): Prop =
     MessageConversion(message).toOption.flatMap(_.correlationId).map(prop).getOrElse(Prop.undecided)
-  }
-}
+end MessageStoreSpecification

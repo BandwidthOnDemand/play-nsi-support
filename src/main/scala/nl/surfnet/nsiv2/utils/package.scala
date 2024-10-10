@@ -31,40 +31,40 @@ import nl.surfnet.nsiv2.messages.*
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import scala.util.{Failure, Success, Try}
 
-package object utils {
-  def classpathResourceUri(name: String): URI = {
+package object utils:
+  def classpathResourceUri(name: String): URI =
     val classLoader = Thread.currentThread().getContextClassLoader
     val resource = classLoader.getResource(name)
     if resource ne null then resource.toURI
     else throw new IllegalArgumentException(f"classpath resource '$name' not found")
-  }
 
-  extension [A](a: A) {
-    def tap[B](f: A => B): A = { f(a); a }
-    def pp: A = { Console.err.println(a); a }
-    def pp(prefix: String): A = { Console.err.println(s"$prefix: $a"); a }
-  }
+  extension [A](a: A)
+    def tap[B](f: A => B): A =
+      f(a)
+      a
+    def pp: A =
+      Console.err.println(a)
+      a
+    def pp(prefix: String): A =
+      Console.err.println(s"$prefix: $a")
+      a
 
-  extension [A](value: Option[A]) {
+  extension [A](value: Option[A])
     def toTry(ifNone: => Throwable): Try[A] = value.map(Success(_)).getOrElse(Failure(ifNone))
     def toTry(ifNone: String): Try[A] =
       value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
-  }
 
-  extension [A](value: Option[Try[A]]) {
-    def sequence: Try[Option[A]] = value match {
+  extension [A](value: Option[Try[A]])
+    def sequence: Try[Option[A]] = value match
       case None    => Success(None)
       case Some(t) => t.map(Some(_))
-    }
-  }
 
-  implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar] {
+  implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar]:
     def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
-  }
 
   val utc: ZoneId = ZoneId.of("Z")
 
-  extension (instant: java.time.Instant) {
+  extension (instant: java.time.Instant)
     def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
 
     def toXMLFormat(zoneId: ZoneId = utc): String = toXMLGregorianCalendar(zoneId).toXMLFormat
@@ -72,29 +72,25 @@ package object utils {
     def toZonedDateTime(zoneId: ZoneId = utc): ZonedDateTime =
       ZonedDateTime.ofInstant(instant, zoneId)
 
-    def toXMLGregorianCalendar(zoneId: ZoneId = utc): XMLGregorianCalendar = {
+    def toXMLGregorianCalendar(zoneId: ZoneId = utc): XMLGregorianCalendar =
       val cal = GregorianCalendar.from(instant.toZonedDateTime(zoneId))
       DatatypeFactory.newInstance.newXMLGregorianCalendar(cal)
-    }
-  }
 
-  extension [T](nillable: Nillable[T]) {
-    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] {
+  extension [T](nillable: Nillable[T])
+    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B]:
       def apply(a: A) = f(a)
-    }
-    private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
+    private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A]:
+      def get = f
 
     def map2[A](f: T => A): Nillable[A] = nillable map asJavaFunction1(f)
     def fold2[A](p: T => A, a: => A, n: => A): A =
       nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
     def orElse2(f: => Nillable[T]): Nillable[T] = nillable orElse asJavaSupplier(f)
     def toOption(nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
-  }
 
-  extension (schedule: ScheduleType) {
+  extension (schedule: ScheduleType)
     def startTime: Nillable[Instant] =
       Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
     def endTime: Nillable[Instant] =
       Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
-  }
-}
+end utils

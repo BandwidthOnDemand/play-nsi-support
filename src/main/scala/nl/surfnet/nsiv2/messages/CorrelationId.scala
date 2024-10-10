@@ -26,11 +26,10 @@ import java.util.UUID
 
 import scala.util.Try
 
-case class CorrelationId private (value: UUID) {
+case class CorrelationId private (value: UUID):
   override def toString: String = s"${CorrelationId.Prefix}${value}"
-}
 
-object CorrelationId {
+object CorrelationId:
   val Prefix = "urn:uuid:"
 
   def apply(mostSigBits: Long, leastSigBits: Long): CorrelationId =
@@ -38,10 +37,8 @@ object CorrelationId {
 
   def fromUuid(uuid: UUID): CorrelationId = CorrelationId(uuid)
 
-  def fromString(s: String): Option[CorrelationId] = s.splitAt(Prefix.size) match {
+  def fromString(s: String): Option[CorrelationId] = s.splitAt(Prefix.size) match
     case (Prefix, uuid) => Try { fromUuid(UUID.fromString(uuid)) }.toOption
     case _              => None
-  }
 
   def random(): CorrelationId = fromUuid(UUID.randomUUID())
-}

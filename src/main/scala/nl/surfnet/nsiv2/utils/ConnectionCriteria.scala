@@ -28,7 +28,7 @@ import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteria
 final case class ConnectionCriteria(
     pending: Option[Either[ReservationRequestCriteriaType, ReservationConfirmCriteriaType]],
     committed: Option[ReservationConfirmCriteriaType]
-) {
+):
   def withRequested(requested: ReservationRequestCriteriaType): ConnectionCriteria =
     copy(pending = Some(Left(requested)))
   def withHeld(held: ReservationConfirmCriteriaType): ConnectionCriteria =
@@ -40,7 +40,7 @@ final case class ConnectionCriteria(
   def requested: Option[ReservationRequestCriteriaType] = pending.flatMap(_.left.toOption)
   def confirmed: Option[ReservationConfirmCriteriaType] = pending.flatMap(_.toOption)
 
-  def pendingVersion: Int = {
+  def pendingVersion: Int =
     pending
       .flatMap(
         _.fold(
@@ -51,8 +51,6 @@ final case class ConnectionCriteria(
       )
       .orElse(committed.map(_.getVersion + 1))
       .getOrElse(1)
-  }
-}
-object ConnectionCriteria {
+end ConnectionCriteria
+object ConnectionCriteria:
   val Initial: ConnectionCriteria = ConnectionCriteria(None, None)
-}

@@ -39,7 +39,7 @@ import scala.reflect.ClassTag
 import java.time.Instant
 import javax.xml.namespace.QName
 
-package object messages {
+package object messages:
   type RequesterNsa = String
   type ConnectionId = String
   type GlobalReservationId = URI
@@ -61,17 +61,14 @@ package object messages {
   private val NULL_PARAMETER_P2PS_ELEMENT = PointToPointObjectFactory.createParameter(null)
 
   def valueFormat[T](message: String)(parse: String => Option[T], print: T => String): Format[T] =
-    new Format[T] {
-      override def reads(json: JsValue): JsResult[T] = json match {
+    new Format[T]:
+      override def reads(json: JsValue): JsResult[T] = json match
         case JsString(s) =>
-          parse(s) match {
+          parse(s) match
             case Some(t) => JsSuccess(t)
             case None    => JsError(Seq(JsPath() -> Seq(JsonValidationError(message, s))))
-          }
         case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("error.expected.jsstring"))))
-      }
       override def writes(t: T): JsValue = JsString(print(t))
-    }
 
   def unaryCaseClassFormat[A: Format, B](
       fieldName: String
@@ -90,46 +87,37 @@ package object messages {
     "error.expected.correlationId"
   )(parse = CorrelationId.fromString, print = _.toString)
 
-  extension (cal: XMLGregorianCalendar) {
-    def toInstant: Instant = {
-      cal.toGregorianCalendar.toZonedDateTime.toInstant
-    }
-  }
+  extension (cal: XMLGregorianCalendar)
+    def toInstant: Instant = cal.toGregorianCalendar.toZonedDateTime.toInstant
 
-  extension [A: HasXmlAny](a: A) {
-    def withPointToPointService(service: P2PServiceBaseType): A = {
+  extension [A: HasXmlAny](a: A)
+    def withPointToPointService(service: P2PServiceBaseType): A =
       a.updateAny(PointToPointObjectFactory.createP2Ps(service))
       a
-    }
 
     def pointToPointService: Option[P2PServiceBaseType] = a.findFirstAny(NULL_P2PS_ELEMENT)
-  }
 
   final val PROTECTION_PARAMETER_TYPE = "protection"
   final val PATH_COMPUTATION_ALGORITHM_PARAMETER_TYPE = "pathComputationAlgorithm"
 
-  implicit class P2PServiceBaseTypeOps(service: P2PServiceBaseType) {
-    object parameters {
-      def apply(`type`: String): Option[String] = {
+  implicit class P2PServiceBaseTypeOps(service: P2PServiceBaseType):
+    object parameters:
+      def apply(`type`: String): Option[String] =
         service.getParameter.asScala
           .find { _.getType == `type` }
           .map { _.getValue }
-      }
 
-      def update(`type`: String, value: Option[String]): Unit = {
+      def update(`type`: String, value: Option[String]): Unit =
         service.getParameter.removeIf(v => v.getType == `type`)
         value.foreach { value =>
           service.getParameter.add(new TypeValueType().withType(`type`).withValue(value))
         }
-      }
-    }
 
     def protectionType: Option[ProtectionType] =
       parameters.apply(PROTECTION_PARAMETER_TYPE).flatMap(ProtectionType.fromString)
 
-    def protectionType_=(protection: Option[ProtectionType]): Unit = {
+    def protectionType_=(protection: Option[ProtectionType]): Unit =
       parameters(PROTECTION_PARAMETER_TYPE) = protection.map(_.toString)
-    }
 
     def sourceStp: Stp = Stp.fromString(service.getSourceSTP).getOrElse {
       throw new IllegalArgumentException(s"invalid source STP ${service.getSourceSTP}")
@@ -138,16 +126,16 @@ package object messages {
     def destStp: Stp = Stp.fromString(service.getDestSTP).getOrElse {
       throw new IllegalArgumentException(s"invalid destination STP ${service.getDestSTP}")
     }
-  }
+  end P2PServiceBaseTypeOps
 
-  extension (requestCriteria: ReservationRequestCriteriaType) {
+  extension (requestCriteria: ReservationRequestCriteriaType)
     def toModifiedConfirmCriteria(
         previouslyCommittedCriteria: ReservationConfirmCriteriaType
-    ): Try[ReservationConfirmCriteriaType] = for {
-      committedP2P <- previouslyCommittedCriteria.pointToPointService.toTry(
-        s"point2point service is missing from committed criteria"
-      )
-    } yield {
+    ): Try[ReservationConfirmCriteriaType] = for committedP2P <-
+        previouslyCommittedCriteria.pointToPointService.toTry(
+          s"point2point service is missing from committed criteria"
+        )
+    yield
       val confirmP2P = committedP2P.shallowCopy
 
       requestCriteria.modifiedCapacity.foreach(confirmP2P.setCapacity)
@@ -174,7 +162,6 @@ package object messages {
       confirmCriteria.withPointToPointService(confirmP2P)
       confirmCriteria.getOtherAttributes.putAll(previouslyCommittedCriteria.getOtherAttributes)
       confirmCriteria
-    }
 
     def toInitialConfirmCriteria(
         fullySpecifiedSource: String,
@@ -206,36 +193,29 @@ package object messages {
         // Look in P2PServiceBaseType for backwards compatibility with replayed messages
         requestCriteria.pointToPointService.map(_.getCapacity)
       )
-    def withModifiedCapacity(capacity: Long): ReservationRequestCriteriaType = {
+    def withModifiedCapacity(capacity: Long): ReservationRequestCriteriaType =
       requestCriteria.updateAny(PointToPointObjectFactory.createCapacity(capacity))
       requestCriteria
-    }
 
     def modifiedParameters: Seq[TypeValueType] =
       requestCriteria.findAny(NULL_PARAMETER_P2PS_ELEMENT)
-    def withModifiedParameters(parameters: TypeValueType*): Boolean = {
+    def withModifiedParameters(parameters: TypeValueType*): Boolean =
       requestCriteria.removeAny(NULL_PARAMETER_P2PS_ELEMENT)
       requestCriteria
         .getAny()
         .addAll(parameters.map(PointToPointObjectFactory.createParameter).asJava)
-    }
-  }
+  end extension
 
-  extension (criteria: ReservationConfirmCriteriaType) {
+  extension (criteria: ReservationConfirmCriteriaType)
 
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
 
     def version: Int = criteria.getVersion
-  }
 
-  extension (criteria: QuerySummaryResultCriteriaType) {
-
+  extension (criteria: QuerySummaryResultCriteriaType)
     /** Schedule is required. */
     def schedule: ScheduleType = criteria.getSchedule
-  }
 
-  extension (str: String) {
-    def uncapitalize: String = str.take(1).toLowerCase + str.drop(1)
-  }
-}
+  extension (str: String) def uncapitalize: String = str.take(1).toLowerCase + str.drop(1)
+end messages

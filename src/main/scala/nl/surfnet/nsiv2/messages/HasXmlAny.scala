@@ -38,12 +38,11 @@ import scala.reflect.ClassTag
   *
   * Also provides utility methods for manipulating the XML elements.
   */
-class XmlAny private (val elements: List[AnyRef]) {
+class XmlAny private (val elements: List[AnyRef]):
 
-  override def equals(obj: Any): Boolean = obj match {
+  override def equals(obj: Any): Boolean = obj match
     case that: XmlAny => unwrapJaxbElements(this.elements) == unwrapJaxbElements(that.elements)
     case _            => false
-  }
 
   override def hashCode(): Int = unwrapJaxbElements(elements).##
 
@@ -68,26 +67,23 @@ class XmlAny private (val elements: List[AnyRef]) {
     case jaxb: JAXBElement[?] => XmlAny.Element(jaxb.getName(), jaxb.isNil(), jaxb.getValue())
     case other                => other
   }
-}
-object XmlAny {
+end XmlAny
+object XmlAny:
   def empty: XmlAny = apply(Nil)
   def apply(elements: Seq[AnyRef]): XmlAny = new XmlAny(elements.toList)
   def unapply(any: XmlAny): Option[List[AnyRef]] = Some(any.elements)
 
   case class Element[T] private[XmlAny] (name: QName, nil: Boolean, value: T)
-  object Element {
-    def unapply(any: Any): Option[(QName, Option[Any])] = any match {
+  object Element:
+    def unapply(any: Any): Option[(QName, Option[Any])] = any match
       case element: JAXBElement[?] =>
         Some((element.getName(), if element.isNil() then None else Option(element.getValue())))
       case _ =>
         None
-    }
-  }
-}
 
 /** Type class for JAXB generated types that have an XML any element.
   */
-trait HasXmlAny[A] {
+trait HasXmlAny[A]:
   extension (a: A)
     def getAny: java.util.List[AnyRef]
 
@@ -108,11 +104,11 @@ trait HasXmlAny[A] {
         case _                       => false
       })
 
-    def updateAny(element: JAXBElement[?]): Unit = {
+    def updateAny(element: JAXBElement[?]): Unit =
       removeAny(element)
       getAny.add(element)
-    }
-}
+  end extension
+end HasXmlAny
 given HasXmlAny[ChildSummaryType] with
   extension (a: ChildSummaryType) def getAny = a.getAny
 given HasXmlAny[QuerySummaryResultCriteriaType] with

@@ -26,13 +26,12 @@ package messages
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
 import org.ogf.schemas.nsi._2013._12.services.point2point.P2PServiceBaseType
 
-trait ShallowCopyable[A] {
+trait ShallowCopyable[A]:
   extension (a: A) def shallowCopy: A
-}
 
 given ShallowCopyable[P2PServiceBaseType] with
   extension (a: P2PServiceBaseType)
-    def shallowCopy = {
+    def shallowCopy =
       new P2PServiceBaseType()
         .withAny(a.getAny)
         .withCapacity(a.getCapacity)
@@ -42,7 +41,6 @@ given ShallowCopyable[P2PServiceBaseType] with
         .withParameter(a.getParameter)
         .withSourceSTP(a.getSourceSTP)
         .withSymmetricPath(a.isSymmetricPath)
-    }
 
 given ShallowCopyable[ScheduleType] with
   extension (a: ScheduleType)

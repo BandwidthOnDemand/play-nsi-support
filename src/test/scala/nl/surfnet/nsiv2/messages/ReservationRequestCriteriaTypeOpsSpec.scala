@@ -10,7 +10,7 @@ import org.ogf.schemas.nsi._2013._12.connection.types.{
 
 class ReservationRequestCriteriaTypeOpsSpec
     extends org.specs2.mutable.Specification
-    with org.specs2.ScalaCheck {
+    with org.specs2.ScalaCheck:
 
   "conversion to confirm criteria" should {
     "initial criteria" >> {
@@ -96,4 +96,4 @@ class ReservationRequestCriteriaTypeOpsSpec
       }
     }
   }
-}
+end ReservationRequestCriteriaTypeOpsSpec

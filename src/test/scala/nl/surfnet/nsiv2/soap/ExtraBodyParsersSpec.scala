@@ -17,9 +17,9 @@ import akka.util.ByteString
 class ExtraBodyParsersSpec
     extends mutable.Specification
     with play.api.test.DefaultAwaitTimeout
-    with play.api.test.FutureAwaits {
+    with play.api.test.FutureAwaits:
 
-  class Fixture extends WithApplication() {
+  class Fixture extends WithApplication():
     implicit lazy val executionContext: ExecutionContext = app.actorSystem.dispatcher
     lazy val controllerComponents: ControllerComponents = stubControllerComponents()
     implicit lazy val actionBuilder: ActionBuilder[Request, AnyContent] =
@@ -29,21 +29,18 @@ class ExtraBodyParsersSpec
 
     def run[A, B](future: Future[Either[A, B]]): Either[Future[A], B] =
       await(future).fold(a => Left(Future.successful(a)), b => Right(b))
-  }
 
   "SoapBodyParser" should {
 
-    "give UnsupportedMediaType when wrong content-type is set" in new Fixture {
-      override def running() = {
+    "give UnsupportedMediaType when wrong content-type is set" in new Fixture:
+      override def running() =
         val request = FakeRequest().withHeaders(CONTENT_TYPE -> "text/html")
         val response = run(extraBodyParsers.soap(NsiXmlDocumentConversion).apply(request).run())
 
         response must beLeft.like { case result => status(result) must beEqualTo(415) }
-      }
-    }
 
-    "give InternalServerError with a SOAP fault when the soap message is not valid" in new Fixture {
-      override def running() = {
+    "give InternalServerError with a SOAP fault when the soap message is not valid" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers
             .soap(NsiXmlDocumentConversion)
@@ -56,11 +53,9 @@ class ExtraBodyParsersSpec
           contentType(result) must beEqualTo(Some(SOAPConstants.SOAP_1_1_CONTENT_TYPE))
           contentAsString(result) must contain("<S:Fault")
         }
-      }
-    }
 
-    "give EntityTooLarge when the input is to large" in new Fixture {
-      override def running() = {
+    "give EntityTooLarge when the input is to large" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers
             .soap(NsiXmlDocumentConversion, 10)
@@ -69,11 +64,9 @@ class ExtraBodyParsersSpec
         )
 
         response must beLeft.like { case result => status(result) must beEqualTo(413) }
-      }
-    }
 
-    "give a SOAP message for a valid request" in new Fixture {
-      override def running() = {
+    "give a SOAP message for a valid request" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers
             .soap(NsiXmlDocumentConversion)
@@ -82,14 +75,12 @@ class ExtraBodyParsersSpec
         )
 
         response must beRight
-      }
-    }
   }
 
   "NsiProviderParser" should {
 
-    "give NSI Initial Reserve for a valid reserve request" in new Fixture {
-      override def running() = {
+    "give NSI Initial Reserve for a valid reserve request" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiProviderOperation
             .apply(FakeSoapRequest())
@@ -97,11 +88,9 @@ class ExtraBodyParsersSpec
         )
 
         response must beRight.like { case NsiProviderMessage(_, _: InitialReserve) => ok }
-      }
-    }
 
-    "give NSI Modify Reserve for a valid reserve request" in new Fixture {
-      override def running() = {
+    "give NSI Modify Reserve for a valid reserve request" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiProviderOperation
             .apply(FakeSoapRequest())
@@ -109,11 +98,9 @@ class ExtraBodyParsersSpec
         )
 
         response must beRight.like { case NsiProviderMessage(_, _: ModifyReserve) => ok }
-      }
-    }
 
-    "give InternalServerError when NSI Reserve contains extra xml" in new Fixture {
-      override def running() = {
+    "give InternalServerError when NSI Reserve contains extra xml" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiProviderOperation
             .apply(FakeSoapRequest())
@@ -127,11 +114,9 @@ class ExtraBodyParsersSpec
             "<faultstring>Error parsing SOAP request: org.xml.sax.SAXParseException; lineNumber: 13; columnNumber: 19; cvc-complex-type.2.4.a: Invalid content was found starting with element 'test'. One of '{connectionId, globalReservationId, description, criteria}' is expected.</faultstring>"
           )
         }
-      }
-    }
 
-    "give InternalServerError when the NSI headers are missing" in new Fixture {
-      override def running() = {
+    "give InternalServerError when the NSI headers are missing" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiProviderOperation
             .apply(FakeSoapRequest())
@@ -145,11 +130,9 @@ class ExtraBodyParsersSpec
             "<faultstring>Error parsing NSI message in SOAP request: missing NSI headers</faultstring>"
           )
         }
-      }
-    }
 
-    "give InternalServerError when there are multiple NSI headers" in new Fixture {
-      override def running() = {
+    "give InternalServerError when there are multiple NSI headers" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiProviderOperation
             .apply(FakeSoapRequest())
@@ -167,13 +150,11 @@ class ExtraBodyParsersSpec
             "<faultstring>Error parsing NSI message in SOAP request: multiple elements 'http://schemas.ogf.org/nsi/2013/12/framework/headers:nsiHeader' in 'Header', expected exactly one</faultstring>"
           )
         }
-      }
-    }
   }
 
   "NsiRequesterParser" should {
-    "give NSI Reserve Commit for a valid reserve confirmed request" in new Fixture {
-      override def running() = {
+    "give NSI Reserve Commit for a valid reserve confirmed request" in new Fixture:
+      override def running() =
         val response = run(
           extraBodyParsers.nsiRequesterOperation
             .apply(FakeSoapRequest())
@@ -181,15 +162,11 @@ class ExtraBodyParsersSpec
         )
 
         response must beRight.like { case NsiRequesterMessage(_, _: ReserveConfirmed) => ok }
-      }
-    }
   }
 
-  object FakeSoapRequest {
-    def apply(): FakeRequest[AnyContentAsEmpty.type] = {
+  object FakeSoapRequest:
+    def apply(): FakeRequest[AnyContentAsEmpty.type] =
       FakeRequest("POST", "/", FakeHeaders(), AnyContentAsEmpty).withHeaders(
         CONTENT_TYPE -> SOAPConstants.SOAP_1_1_CONTENT_TYPE
       )
-    }
-  }
-}
+end ExtraBodyParsersSpec

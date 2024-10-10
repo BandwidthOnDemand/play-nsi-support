@@ -66,7 +66,11 @@ object NsiSoapConversions:
 
   def documentToScalaXml(document: Document): scala.xml.Node =
     val source = new DOMSource(document)
-    val adapter = new NoBindingFactoryAdapter
+    val adapter = new NoBindingFactoryAdapter:
+      // `endDocument` in the Scala 3 XML library is broken since it requires a call to `loadDocument`
+      // first to initialize the XML reader. We don't need any of these features so do nothing here.
+      override def endDocument(): Unit =
+        ()
     val saxResult = new SAXResult(adapter)
     val transformerFactory = javax.xml.transform.TransformerFactory.newInstance()
     val transformer = transformerFactory.newTransformer()

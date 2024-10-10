@@ -22,6 +22,5 @@
  */
 package nl.surfnet.nsiv2.utils
 
-trait StateMachine[I, O] {
+trait StateMachine[I, O]:
   def process(message: I): Option[Seq[O]]
-}

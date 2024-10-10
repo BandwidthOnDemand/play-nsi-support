@@ -20,16 +20,16 @@ abstract class MessageStoreSpecification
   private def newConnectionId = UUID.randomUUID.toString
 
   type Message
-  implicit def MessageConversion: Conversion[Message, MessageData]
-  implicit def MessageGenerator: Gen[Message]
+  given MessageConversion: Conversion[Message, MessageData]
+  given MessageGenerator: Gen[Message]
 
-  implicit def ArbitraryMessage: Arbitrary[Message] = Arbitrary(MessageGenerator)
-  implicit def ArbitraryMessageData: Arbitrary[(Message, MessageData)] = Arbitrary(for
+  given Arbitrary[Message] = Arbitrary(MessageGenerator)
+  given Arbitrary[(Message, MessageData)] = Arbitrary(for
     message <- MessageGenerator
     data <- MessageConversion(message).map(Gen.const).getOrElse(Gen.fail)
   yield (message, data))
 
-  implicit def shrinkMessage: Shrink[Message] = Shrink(_ => Stream.empty)
+  given Shrink[Message] = Shrink(_ => Stream.empty)
 
   class Fixture extends WithApplication():
     lazy val database: Database = Databases.inMemory()

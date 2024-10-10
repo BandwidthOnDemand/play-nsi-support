@@ -37,9 +37,9 @@ import play.api.mvc.*
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-import soap.NsiSoapConversions.*
+import nl.surfnet.nsiv2.soap.NsiSoapConversions.{given, *}
 
-class ExtraBodyParsers(implicit
+class ExtraBodyParsers(using
     ec: ExecutionContext,
     bodyParsers: PlayBodyParsers,
     actionBuilder: ActionBuilder[Request, AnyContent]
@@ -51,11 +51,11 @@ class ExtraBodyParsers(implicit
   type NsiProviderAction =
     NsiProviderMessage[NsiProviderOperation] => Future[NsiProviderMessage[NsiAcknowledgement]]
 
-  implicit val NsiMessageContentType: ContentTypeOf[NsiMessage[_]] = ContentTypeOf(
+  given NsiMessageContentType: ContentTypeOf[NsiMessage[_]] = ContentTypeOf(
     Some(SOAPConstants.SOAP_1_1_CONTENT_TYPE)
   )
 
-  implicit def NsiMessageWriteable[T <: NsiMessage[_]](implicit
+  given NsiMessageWriteable[T <: NsiMessage[_]](using
       conversion: Conversion[T, Document]
   ): Writeable[T] = Writeable { message =>
     conversion
@@ -193,7 +193,7 @@ class ExtraBodyParsers(implicit
     NsiRequesterMessageToDocument[NsiRequesterOperation](None)
   )
 
-  private def nsiBodyParser[T <: NsiMessage[_]](implicit
+  private def nsiBodyParser[T <: NsiMessage[_]](
       conversion: Conversion[T, Document]
   ): BodyParser[T] = BodyParser { requestHeader =>
     soap(NsiXmlDocumentConversion)(requestHeader).map {

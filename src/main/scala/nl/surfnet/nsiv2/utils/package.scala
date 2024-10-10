@@ -59,7 +59,7 @@ package object utils:
       case None    => Success(None)
       case Some(t) => t.map(Some(_))
 
-  implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar]:
+  given Ordering[XMLGregorianCalendar] with
     def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
 
   val utc: ZoneId = ZoneId.of("Z")

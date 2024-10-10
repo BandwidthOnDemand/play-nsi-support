@@ -164,8 +164,7 @@ object Stp:
   type Label = (String, Option[String])
 
   import scala.math.Ordering.Implicits.*
-  implicit val StpOrdering: Ordering[Stp] =
-    Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
+  given Ordering[Stp] = Ordering.by(stp => (stp.identifier, stp.labels.toIndexedSeq))
 
   private val LabelPattern = "([^=]*)(?:=([^=]*))?".r
 

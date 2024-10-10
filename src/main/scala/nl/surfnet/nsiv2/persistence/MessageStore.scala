@@ -31,7 +31,7 @@ import java.util.UUID
 import javax.inject.Inject
 import nl.surfnet.nsiv2.messages.*
 import nl.surfnet.nsiv2.soap.*
-import nl.surfnet.nsiv2.soap.NsiSoapConversions.*
+import nl.surfnet.nsiv2.soap.NsiSoapConversions.{given, *}
 import nl.surfnet.nsiv2.utils.*
 import org.ogf.schemas.nsi._2013._12.framework.types.ServiceExceptionType
 import play.api.Logger
@@ -79,9 +79,7 @@ given ServiceExceptionTypeFormat: Format[ServiceExceptionType] = conversionToFor
 case class MessageRecord[T](id: Long, createdAt: Instant, connectionId: ConnectionId, message: T):
   def map[B](f: T => B): MessageRecord[B] = copy(message = f(message))
 
-class MessageStore[M] @Inject() (database: Database)(implicit
-    conversion: Conversion[M, MessageData]
-):
+class MessageStore[M] @Inject() (database: Database)(using conversion: Conversion[M, MessageData]):
   private val logger = Logger(classOf[MessageStore[?]])
 
   def create(connectionId: ConnectionId, createdAt: Instant, requesterNsa: RequesterNsa): Unit =
@@ -183,7 +181,7 @@ class MessageStore[M] @Inject() (database: Database)(implicit
   }
 
   private def store(connectionPk: Long, createdAt: Instant, message: M, inboundId: Option[Long])(
-      implicit connection: Connection
+      using connection: Connection
   ) =
     val serialized = conversion(message).get
     import serialized.*

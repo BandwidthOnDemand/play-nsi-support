@@ -14,7 +14,7 @@ import akka.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class NsiSoapConversionsSpec extends mutable.Specification:
-  import NsiSoapConversions.*
+  import NsiSoapConversions.{given, *}
 
   val DefaultAckHeaders: NsiHeaders = NsiHeaders(
     CorrelationId.random(),
@@ -26,18 +26,20 @@ class NsiSoapConversionsSpec extends mutable.Specification:
 
   val providerOperationToStringConversion
       : Conversion[NsiProviderMessage[NsiProviderOperation], String] =
-    NsiProviderMessageToDocument(None)(
-      NsiProviderOperationToElement
-    ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+    NsiProviderMessageToDocument[NsiProviderOperation](None)
+      .andThen(NsiXmlDocumentConversion)
+      .andThen(ByteArrayToString)
+
   val requestOperationToStringConversion
       : Conversion[NsiRequesterMessage[NsiRequesterOperation], String] =
-    NsiRequesterMessageToDocument(None)(
-      NsiRequesterOperationToElement
-    ).andThen(NsiXmlDocumentConversion.andThen(ByteArrayToString))
+    NsiRequesterMessageToDocument[NsiRequesterOperation](None)
+      .andThen(NsiXmlDocumentConversion)
+      .andThen(ByteArrayToString)
+
   val requestAckToStringConversion: Conversion[NsiRequesterMessage[NsiAcknowledgement], String] =
-    NsiRequesterMessageToDocument(Some(DefaultAckHeaders))(
-      NsiAcknowledgementOperationToElement
-    ).andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
+    NsiRequesterMessageToDocument[NsiAcknowledgement](Some(DefaultAckHeaders))
+      .andThen(NsiXmlDocumentConversion)
+      .andThen(ByteArrayToString)
 
   "NSI requester operation to string" should {
 

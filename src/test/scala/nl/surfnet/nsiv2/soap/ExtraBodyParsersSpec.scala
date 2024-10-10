@@ -20,11 +20,11 @@ class ExtraBodyParsersSpec
     with play.api.test.FutureAwaits:
 
   class Fixture extends WithApplication():
-    implicit lazy val executionContext: ExecutionContext = app.actorSystem.dispatcher
-    lazy val controllerComponents: ControllerComponents = stubControllerComponents()
-    implicit lazy val actionBuilder: ActionBuilder[Request, AnyContent] =
-      controllerComponents.actionBuilder
-    implicit lazy val bodyParsers: PlayBodyParsers = stubPlayBodyParsers
+    given executionContext: ExecutionContext = app.actorSystem.dispatcher
+    given controllerComponents: ControllerComponents = stubControllerComponents()
+    given actionBuilder: ActionBuilder[Request, AnyContent] = controllerComponents.actionBuilder
+    given bodyParsers: PlayBodyParsers = stubPlayBodyParsers
+
     lazy val extraBodyParsers = new ExtraBodyParsers
 
     def run[A, B](future: Future[Either[A, B]]): Either[Future[A], B] =

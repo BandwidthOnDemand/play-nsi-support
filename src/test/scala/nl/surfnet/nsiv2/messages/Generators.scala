@@ -20,21 +20,21 @@ import org.scalacheck.Gen
 
 object Generators:
 
-  implicit val ArbitraryInstant: Arbitrary[Instant] = Arbitrary(
+  given Arbitrary[Instant] = Arbitrary(
     for timeInMillis <- Gen.choose(0L, System.currentTimeMillis() * 3)
     yield Instant.ofEpochMilli(timeInMillis)
   )
 
-  implicit val ArbitraryCorrelationId: Arbitrary[CorrelationId] = Arbitrary(for
+  given Arbitrary[CorrelationId] = Arbitrary(for
     leastSigBits <- arbitrary[Long]
     mostSigBits <- arbitrary[Long]
   yield CorrelationId(mostSigBits, leastSigBits))
 
-  implicit val ArbitraryURI: Arbitrary[URI] = Arbitrary(
+  given Arbitrary[URI] = Arbitrary(
     Gen.oneOf("https://www.host.invalid/foo/bar", "https://localhost:8443/").map(URI.create)
   )
 
-  implicit val ArbitraryScheduleType: Arbitrary[ScheduleType] = Arbitrary(
+  given Arbitrary[ScheduleType] = Arbitrary(
     for
       startTime <- arbitrary[Nillable[XMLGregorianCalendar]]
       endTime <- arbitrary[Nillable[XMLGregorianCalendar]]
@@ -43,25 +43,25 @@ object Generators:
       .withEndTime(endTime)
   )
 
-  implicit val ArbitraryXMLGregorianCalendar: Arbitrary[XMLGregorianCalendar] = Arbitrary(
+  given Arbitrary[XMLGregorianCalendar] = Arbitrary(
     for now <- arbitrary[Instant]
     yield now.toXMLGregorianCalendar()
   )
 
-  implicit val ArbitraryStp: Arbitrary[Stp] = Arbitrary(
+  given Arbitrary[Stp] = Arbitrary(
     Gen.oneOf("STP-A", "STP-B", "STP-C").flatMap { s =>
       Stp.fromString(s) map Gen.const getOrElse Gen.fail
     }
   )
 
-  implicit def ArbitraryNillable[A](implicit a: Arbitrary[A]): Arbitrary[Nillable[A]] = Arbitrary {
+  given [A: Arbitrary]: Arbitrary[Nillable[A]] = Arbitrary {
     for
       x <- arbitrary[A]
       result <- Gen.oneOf(Nillable.present(x), Nillable.absent[A], Nillable.nil[A])
     yield result
   }
 
-  implicit val ArbitraryP2PServiceBaseType: Arbitrary[P2PServiceBaseType] = Arbitrary(
+  given Arbitrary[P2PServiceBaseType] = Arbitrary(
     for
       capacity <- Gen.oneOf(100000L, 500000L, 1000000L, 10000000L)
       directionality <- Gen.oneOf(DirectionalityType.values().toIndexedSeq)
@@ -76,7 +76,7 @@ object Generators:
       .withDestSTP(destStp)
   )
 
-  implicit val ArbitrarySessionSecurityAttrType: Arbitrary[SessionSecurityAttrType] = Arbitrary(
+  given Arbitrary[SessionSecurityAttrType] = Arbitrary(
     Gen.alphaStr.map { token =>
       new SessionSecurityAttrType().withAttributeOrEncryptedAttribute(
         new AttributeType().withName("token").withAttributeValue(token)
@@ -84,12 +84,12 @@ object Generators:
     }
   )
 
-  implicit val ArbitraryConnectionType: Arbitrary[ConnectionType] = Arbitrary(for
+  given Arbitrary[ConnectionType] = Arbitrary(for
     value <- Gen.oneOf("connection-type-1", "connection-type-2", "connection-type-3")
     index <- Gen.choose(0, 4)
   yield new ConnectionType().withValue(value).withIndex(index))
 
-  implicit val ArbitraryReservationRequestCriteriaType: Arbitrary[ReservationRequestCriteriaType] =
+  given Arbitrary[ReservationRequestCriteriaType] =
     Arbitrary(
       for
         schedule <- arbitrary[ScheduleType]
@@ -103,7 +103,7 @@ object Generators:
         .withVersion(version.map(Integer.valueOf).orNull)
     )
 
-  implicit val ArbitraryReservationConfirmCriteriaType: Arbitrary[ReservationConfirmCriteriaType] =
+  given Arbitrary[ReservationConfirmCriteriaType] =
     Arbitrary(
       for
         schedule <- arbitrary[ScheduleType]
@@ -117,12 +117,12 @@ object Generators:
         .withVersion(version)
     )
 
-  implicit val ArbitraryReserveType: Arbitrary[ReserveType] = Arbitrary(
+  given Arbitrary[ReserveType] = Arbitrary(
     for criteria <- arbitrary[ReservationRequestCriteriaType]
     yield new ReserveType().withCriteria(criteria)
   )
 
-  implicit val ArbitraryNsiHeaders: Arbitrary[NsiHeaders] = Arbitrary(
+  given Arbitrary[NsiHeaders] = Arbitrary(
     for
       correlationId <- arbitrary[CorrelationId]
       requesterNsa <- Gen.alphaStr
@@ -140,13 +140,11 @@ object Generators:
     )
   )
 
-  implicit val ArbitraryInitialReserve: Arbitrary[InitialReserve] = Arbitrary(
-    Gen.resultOf(InitialReserve.apply _)
-  )
+  given Arbitrary[InitialReserve] = Arbitrary(Gen.resultOf(InitialReserve.apply _))
 
-  implicit val ArbitraryNsiProviderOperation: Arbitrary[NsiProviderOperation] = Arbitrary(
-    arbitrary[InitialReserve]
+  given Arbitrary[NsiProviderOperation] = Arbitrary(arbitrary[InitialReserve])
+
+  given [A <: NsiOperation: Arbitrary]: Arbitrary[NsiProviderMessage[A]] = Arbitrary(
+    Gen.resultOf(NsiProviderMessage.apply[A] _)
   )
-  implicit def ArbitraryFromProviderMessage[A <: NsiOperation: Arbitrary]
-      : Arbitrary[NsiProviderMessage[A]] = Arbitrary(Gen.resultOf(NsiProviderMessage.apply[A] _))
 end Generators

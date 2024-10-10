@@ -1,6 +1,6 @@
 package nl.surfnet.nsiv2.messages
 
-import Generators.*
+import Generators.{given, *}
 import javax.xml.datatype.XMLGregorianCalendar
 import nl.surfnet.bod.nsi.Nillable
 import org.ogf.schemas.nsi._2013._12.connection.types.{

@@ -39,7 +39,7 @@ trait Conversion[A, B]:
       override val invert: Conversion[A, C] = inner
 
 object Conversion:
-  def apply[A, B](implicit conversion: Conversion[A, B]) = conversion
+  def apply[A, B](using conversion: Conversion[A, B]) = conversion
   def build[A, B](to: A => Try[B])(from: B => Try[A]): Conversion[A, B] = new Conversion[A, B]:
     outer =>
     override def apply(a: A) = Try(to(a)).flatten
@@ -47,5 +47,5 @@ object Conversion:
       override def apply(b: B) = Try(from(b)).flatten
       override val invert: Conversion[A, B] = outer
 
-  def convert[A, B](a: A)(implicit conversion: Conversion[A, B]): Try[B] = conversion(a)
-  def invert[A, B](b: B)(implicit conversion: Conversion[A, B]): Try[A] = conversion.invert(b)
+  def convert[A, B](a: A)(using conversion: Conversion[A, B]): Try[B] = conversion(a)
+  def invert[A, B](b: B)(using conversion: Conversion[A, B]): Try[A] = conversion.invert(b)

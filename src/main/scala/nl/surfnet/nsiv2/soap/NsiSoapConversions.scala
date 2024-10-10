@@ -53,7 +53,7 @@ import scala.xml.parsing.NoBindingFactoryAdapter
 import javax.xml.transform.sax.SAXResult
 
 object NsiSoapConversions:
-  implicit val ByteArrayToString: Conversion[ByteString, String] =
+  given ByteArrayToString: Conversion[ByteString, String] =
     Conversion.build[ByteString, String] { bytes =>
       Try(bytes.utf8String)
     } { string =>
@@ -77,10 +77,10 @@ object NsiSoapConversions:
     transformer.transform(source, saxResult)
     adapter.rootElem
 
-  implicit val DocumentToString: Conversion[Document, String] =
+  given DocumentToString: Conversion[Document, String] =
     NsiXmlDocumentConversion.andThen(ByteArrayToString)
 
-  implicit def NsiToString[T](implicit conversion: Conversion[T, Document]): Conversion[T, String] =
+  given NsiToString[T](using conversion: Conversion[T, Document]): Conversion[T, String] =
     conversion.andThen(NsiXmlDocumentConversion).andThen(ByteArrayToString)
 
   private val typesFactory = new org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory()
@@ -100,7 +100,7 @@ object NsiSoapConversions:
     pathTraceFactory
   ).map(_.getClass().getPackage().getName())
 
-  def NsiProviderMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit
+  def NsiProviderMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(using
       bodyConversion: Conversion[T, Element]
   ): Conversion[NsiProviderMessage[T], Document] = (Conversion
     .build[NsiProviderMessage[T], (Option[NsiHeaders], T)] { message =>
@@ -113,7 +113,7 @@ object NsiSoapConversions:
     })
     .andThen(NsiHeadersAndBodyToDocument[T](bodyConversion))
 
-  def NsiRequesterMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(implicit
+  def NsiRequesterMessageToDocument[T <: NsiOperation](defaultHeaders: Option[NsiHeaders])(using
       bodyConversion: Conversion[T, Element]
   ): Conversion[NsiRequesterMessage[T], Document] = (Conversion
     .build[NsiRequesterMessage[T], (Option[NsiHeaders], T)] { message =>
@@ -132,7 +132,7 @@ object NsiSoapConversions:
     result.getNode().asInstanceOf[Document].getDocumentElement()
   }
 
-  implicit val NsiAcknowledgementOperationToElement: Conversion[NsiAcknowledgement, Element] =
+  given Conversion[NsiAcknowledgement, Element] =
     Conversion.build[NsiAcknowledgement, Element] {
       case GenericAck() =>
         marshal(typesFactory.createAcknowledgment(new GenericAcknowledgmentType()))
@@ -218,7 +218,7 @@ object NsiSoapConversions:
       )
     }
 
-  implicit val NsiProviderOperationToElement: Conversion[NsiProviderOperation, Element] =
+  given Conversion[NsiProviderOperation, Element] =
     Conversion.build[NsiProviderOperation, Element] { operation =>
       marshal(operation match
         case InitialReserve(body) => typesFactory.createReserve(body)
@@ -366,7 +366,7 @@ object NsiSoapConversions:
       new QueryType().withGlobalReservationId(globalReservationIds.map(_.toASCIIString()).asJava)
     case None => new QueryType()
 
-  implicit val NsiRequesterOperationToElement: Conversion[NsiRequesterOperation, Element] =
+  given Conversion[NsiRequesterOperation, Element] =
     Conversion.build[NsiRequesterOperation, Element] { operation =>
       marshal(operation match
         case ReserveConfirmed(connectionId, criteria) =>
@@ -482,7 +482,7 @@ object NsiSoapConversions:
       )
     }
 
-  private implicit val NsiHeadersToCommonHeaderType: Conversion[NsiHeaders, CommonHeaderType] =
+  private given Conversion[NsiHeaders, CommonHeaderType] =
     Conversion.build[NsiHeaders, CommonHeaderType] { headers =>
       Try(
         new CommonHeaderType()
@@ -517,7 +517,7 @@ object NsiSoapConversions:
   private trait NsiMessageParser[T]:
     def apply(bodyNode: Element): Try[T]
   private object NsiMessageParser:
-    def apply[M, T](f: M => Try[T])(implicit manifest: ClassTag[M]): NsiMessageParser[T] =
+    def apply[M, T](f: M => Try[T])(using manifest: ClassTag[M]): NsiMessageParser[T] =
       new NsiMessageParser[T]:
         override def apply(bodyNode: Element) =
           val unmarshaller = jaxbContext.createUnmarshaller()
@@ -580,7 +580,7 @@ object NsiSoapConversions:
 
   val jaxbContext: JAXBContext = JAXBContext.newInstance(SchemaPackages.mkString(":"))
 
-  private implicit val NsiHeadersToElement: Conversion[NsiHeaders, Element] =
+  private given Conversion[NsiHeaders, Element] =
     Conversion.build[NsiHeaders, Element] { headers =>
       for
         commonHeaderType <- Conversion[NsiHeaders, CommonHeaderType].apply(headers)
@@ -613,14 +613,14 @@ object NsiSoapConversions:
       }
     }
 
-  implicit val NsiHeadersToXmlString: Conversion[NsiHeaders, String] =
+  given NsiHeadersToXmlString: Conversion[NsiHeaders, String] =
     Conversion[NsiHeaders, CommonHeaderType] andThen NsiJaxbElementToString(
       headersFactory.createNsiHeader(null)
     )
-  implicit val ServiceExceptionTypeToXmlString: Conversion[ServiceExceptionType, String] =
+  given ServiceExceptionTypeToXmlString: Conversion[ServiceExceptionType, String] =
     NsiJaxbElementToString(typesFactory.createServiceException(null))
 
-  private def NsiHeadersAndBodyToDocument[T](implicit bodyConversion: Conversion[T, Element]) =
+  private def NsiHeadersAndBodyToDocument[T](bodyConversion: Conversion[T, Element]) =
     Conversion.build[(Option[NsiHeaders], T), Document] { case (headers, body) =>
       for
         headersElementOption <- headers.map(Conversion[NsiHeaders, Element].apply).sequence
@@ -674,7 +674,7 @@ object NsiSoapConversions:
 
   private def parseSoapBody[T](
       soapBody: Element
-  )(implicit bodyConversion: Conversion[T, Element]): Try[T] = for
+  )(bodyConversion: Conversion[T, Element]): Try[T] = for
     bodyNode <- findSingleChildElement(NsiConnectionTypesNamespace, "*", soapBody)
     body <- bodyConversion.invert(bodyNode)
   yield body
@@ -683,7 +683,7 @@ object NsiSoapConversions:
 
   private def parseSoapFault[T](
       soapFault: Element
-  )(implicit bodyConversion: Conversion[T, Element]): Try[T] = for
+  )(bodyConversion: Conversion[T, Element]): Try[T] = for
     faultString <- findSingleChildElement("", "faultstring", soapFault)
     serviceExceptionNode <- findOptionalChildElement(
       ServiceExceptionTypeName.getNamespaceURI(),

@@ -75,15 +75,15 @@ package object messages:
   )(apply: A => B, unapply: B => A): OFormat[B] =
     (__ \ fieldName).format[A].inmap(apply, unapply)
 
-  implicit val JavaTimeInstantFormat: Format[java.time.Instant] = Format(
+  given Format[java.time.Instant] = Format(
     implicitly[Reads[Long]].map(java.time.Instant.ofEpochMilli),
     Writes(d => JsNumber(d.toEpochMilli))
   )
-  implicit val UriFormat: Format[URI] = valueFormat("error.expected.uri")(
+  given Format[URI] = valueFormat("error.expected.uri")(
     parse = s => Try(URI.create(s)).toOption,
     print = _.toASCIIString
   )
-  implicit val CorrelationIdFormat: Format[CorrelationId] = valueFormat(
+  given Format[CorrelationId] = valueFormat(
     "error.expected.correlationId"
   )(parse = CorrelationId.fromString, print = _.toString)
 

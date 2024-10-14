@@ -22,7 +22,7 @@
  */
 package nl.surfnet.nsiv2.soap
 
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 import jakarta.xml.soap.SOAPConstants
 

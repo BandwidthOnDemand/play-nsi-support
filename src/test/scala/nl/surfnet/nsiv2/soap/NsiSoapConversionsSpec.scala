@@ -10,7 +10,7 @@ import org.ogf.schemas.nsi._2013._12.framework.headers.SessionSecurityAttrType
 import scala.jdk.CollectionConverters.*
 import scala.util.Failure
 import scala.util.Success
-import akka.util.ByteString
+import org.apache.pekko.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class NsiSoapConversionsSpec extends mutable.Specification:

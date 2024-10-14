@@ -10,8 +10,8 @@ import jakarta.xml.soap.*
 import java.io.File
 import nl.surfnet.nsiv2.messages.*
 import NsiSoapConversions.NsiXmlDocumentConversion
-import akka.stream.*, scaladsl.*
-import akka.util.ByteString
+import org.apache.pekko.stream.*, scaladsl.*
+import org.apache.pekko.util.ByteString
 
 @org.junit.runner.RunWith(classOf[runner.JUnitRunner])
 class ExtraBodyParsersSpec

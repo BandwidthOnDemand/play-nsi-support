@@ -25,25 +25,32 @@ package nl.surfnet.nsiv2.utils
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 
-final case class ConnectionCriteria(pending: Option[Either[ReservationRequestCriteriaType, ReservationConfirmCriteriaType]], committed: Option[ReservationConfirmCriteriaType]) {
-  def withRequested(requested: ReservationRequestCriteriaType) = copy(pending = Some(Left(requested)))
-  def withHeld(held: ReservationConfirmCriteriaType) = copy(pending = Some(Right(held)))
+final case class ConnectionCriteria(
+    pending: Option[Either[ReservationRequestCriteriaType, ReservationConfirmCriteriaType]],
+    committed: Option[ReservationConfirmCriteriaType]
+):
+  def withRequested(requested: ReservationRequestCriteriaType): ConnectionCriteria =
+    copy(pending = Some(Left(requested)))
+  def withHeld(held: ReservationConfirmCriteriaType): ConnectionCriteria =
+    copy(pending = Some(Right(held)))
 
-  def commit = copy(pending = None, committed = pending.flatMap(_.right.toOption))
-  def abort = copy(pending = None)
+  def commit: ConnectionCriteria = copy(pending = None, committed = pending.flatMap(_.toOption))
+  def abort: ConnectionCriteria = copy(pending = None)
 
-  def requested = pending.flatMap(_.left.toOption)
-  def confirmed = pending.flatMap(_.right.toOption)
+  def requested: Option[ReservationRequestCriteriaType] = pending.flatMap(_.left.toOption)
+  def confirmed: Option[ReservationConfirmCriteriaType] = pending.flatMap(_.toOption)
 
-  def pendingVersion: Int = {
-    pending.flatMap(_.fold(
-      requested => if (requested.getVersion eq null) None else Some(requested.getVersion.intValue),
-      confirmed => Some(confirmed.getVersion)
-    ))
+  def pendingVersion: Int =
+    pending
+      .flatMap(
+        _.fold(
+          requested =>
+            if requested.getVersion eq null then None else Some(requested.getVersion.intValue),
+          confirmed => Some(confirmed.getVersion)
+        )
+      )
       .orElse(committed.map(_.getVersion + 1))
       .getOrElse(1)
-  }
-}
-object ConnectionCriteria {
-  val Initial = ConnectionCriteria(None, None)
-}
+end ConnectionCriteria
+object ConnectionCriteria:
+  val Initial: ConnectionCriteria = ConnectionCriteria(None, None)

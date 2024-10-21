@@ -23,79 +23,74 @@
 package nl.surfnet.nsiv2
 
 import java.net.URI
-import java.time._
+import java.time.*
 import java.util.GregorianCalendar
-import javax.xml.datatype.{ DatatypeFactory, XMLGregorianCalendar }
+import javax.xml.datatype.{DatatypeFactory, XMLGregorianCalendar}
 import nl.surfnet.bod.nsi.Nillable
-import nl.surfnet.nsiv2.messages._
+import nl.surfnet.nsiv2.messages.*
 import org.ogf.schemas.nsi._2013._12.connection.types.ScheduleType
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
-
-package object utils {
-  def classpathResourceUri(name: String): URI = {
+package object utils:
+  def classpathResourceUri(name: String): URI =
     val classLoader = Thread.currentThread().getContextClassLoader
     val resource = classLoader.getResource(name)
-    if (resource != null) resource.toURI
+    if resource ne null then resource.toURI
     else throw new IllegalArgumentException(f"classpath resource '$name' not found")
-  }
 
-  implicit class AnyOps[A](a: A) {
-    def tap[B](f: A => B): A = { f(a); a }
-    def pp: A = { Console.err.println(a); a }
-    def pp(prefix: String): A = { Console.err.println(s"$prefix: $a"); a }
-  }
+  extension [A](a: A)
+    def tap[B](f: A => B): A =
+      f(a)
+      a
+    def pp: A =
+      Console.err.println(a)
+      a
+    def pp(prefix: String): A =
+      Console.err.println(s"$prefix: $a")
+      a
 
-  implicit class OptionOps[A](value: Option[A]) {
+  extension [A](value: Option[A])
     def toTry(ifNone: => Throwable): Try[A] = value.map(Success(_)).getOrElse(Failure(ifNone))
-    def toTry(ifNone: String): Try[A] = value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
-  }
+    def toTry(ifNone: String): Try[A] =
+      value.map(Success(_)).getOrElse(Failure(ErrorMessage(ifNone)))
 
-  implicit class OptionTryOps[A](value: Option[Try[A]]) {
-    def sequence: Try[Option[A]] = value match {
+  extension [A](value: Option[Try[A]])
+    def sequence: Try[Option[A]] = value match
       case None    => Success(None)
       case Some(t) => t.map(Some(_))
-    }
-  }
 
-  implicit class TryOps[A](a: Try[A]) {
-    def toEither: Either[Throwable, A] = a match {
-      case Failure(t) => Left(t)
-      case Success(a) => Right(a)
-    }
-  }
-
-  implicit object XmlGregorianCalendarOrdering extends Ordering[XMLGregorianCalendar] {
+  given Ordering[XMLGregorianCalendar] with
     def compare(x: XMLGregorianCalendar, y: XMLGregorianCalendar): Int = x compare y
-  }
 
-  val utc = ZoneId.of("Z")
+  val utc: ZoneId = ZoneId.of("Z")
 
-  implicit class InstantOps(instant: java.time.Instant) {
+  extension (instant: java.time.Instant)
     def toSqlTimestamp = new java.sql.Timestamp(instant.toEpochMilli)
 
-    def toXMLFormat(zoneId: ZoneId = utc) = toXMLGregorianCalendar(zoneId).toXMLFormat
+    def toXMLFormat(zoneId: ZoneId = utc): String = toXMLGregorianCalendar(zoneId).toXMLFormat
 
-    def toZonedDateTime(zoneId: ZoneId = utc) = ZonedDateTime.ofInstant(instant, zoneId)
+    def toZonedDateTime(zoneId: ZoneId = utc): ZonedDateTime =
+      ZonedDateTime.ofInstant(instant, zoneId)
 
-    def toXMLGregorianCalendar(zoneId: ZoneId = utc) = {
+    def toXMLGregorianCalendar(zoneId: ZoneId = utc): XMLGregorianCalendar =
       val cal = GregorianCalendar.from(instant.toZonedDateTime(zoneId))
       DatatypeFactory.newInstance.newXMLGregorianCalendar(cal)
-    }
-  }
 
-  implicit class NillableOps[T] (nillable: Nillable[T]) {
-    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B] { def apply(a: A) = f(a) }
-    private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A] { def get = f }
+  extension [T](nillable: Nillable[T])
+    private def asJavaFunction1[A, B](f: A => B) = new java.util.function.Function[A, B]:
+      def apply(a: A) = f(a)
+    private def asJavaSupplier[A](f: => A) = new java.util.function.Supplier[A]:
+      def get = f
 
-    def map2[A] (f: T => A) = nillable map asJavaFunction1(f)
-    def fold2[A] (p: T => A, a: => A, n: => A) = nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
-    def orElse2 (f: => Nillable[T]) = nillable orElse asJavaSupplier(f)
-    def toOption (nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
-  }
+    def map2[A](f: T => A): Nillable[A] = nillable map asJavaFunction1(f)
+    def fold2[A](p: T => A, a: => A, n: => A): A =
+      nillable.fold(asJavaFunction1(p), asJavaSupplier(a), asJavaSupplier(n))
+    def orElse2(f: => Nillable[T]): Nillable[T] = nillable orElse asJavaSupplier(f)
+    def toOption(nil: => Option[T]): Option[T] = fold2(Some(_), None, nil)
 
-  implicit class ScheduleTypeOps(schedule: ScheduleType) {
-    def startTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
-    def endTime: Nillable[Instant] = Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
-  }
-}
+  extension (schedule: ScheduleType)
+    def startTime: Nillable[Instant] =
+      Option(schedule).fold(Nillable.absent[Instant])(_.getStartTime.map2(_.toInstant))
+    def endTime: Nillable[Instant] =
+      Option(schedule).fold(Nillable.absent[Instant])(_.getEndTime.map2(_.toInstant))
+end utils

@@ -45,7 +45,8 @@ class MessageFormatsSpec extends org.specs2.mutable.Specification with org.specs
       val json = Json.toJson(msg)(NsiProviderOperationFormat)
       json must beAnInstanceOf[JsString]
 
-      val parsed = Json.fromJson[NsiProviderMessage[NsiProviderOperation]](json)(NsiProviderOperationFormat)
+      val parsed =
+        Json.fromJson[NsiProviderMessage[NsiProviderOperation]](json)(NsiProviderOperationFormat)
       parsed must beLike { case JsSuccess(m, _) =>
         m.headers.correlationId must beEqualTo(testHeaders.correlationId)
         m.headers.requesterNSA must beEqualTo(testHeaders.requesterNSA)
@@ -57,7 +58,8 @@ class MessageFormatsSpec extends org.specs2.mutable.Specification with org.specs
     "round-trip arbitrary provider messages through JSON" in {
       prop { (msg: NsiProviderMessage[NsiProviderOperation]) =>
         val json = Json.toJson(msg)(NsiProviderOperationFormat)
-        val parsed = Json.fromJson[NsiProviderMessage[NsiProviderOperation]](json)(NsiProviderOperationFormat)
+        val parsed =
+          Json.fromJson[NsiProviderMessage[NsiProviderOperation]](json)(NsiProviderOperationFormat)
         parsed must beLike { case JsSuccess(m, _) =>
           m.headers.correlationId must beEqualTo(msg.headers.correlationId)
           m.body.getClass must beEqualTo(msg.body.getClass)
@@ -87,7 +89,8 @@ class MessageFormatsSpec extends org.specs2.mutable.Specification with org.specs
       val json = Json.toJson(msg)(NsiRequesterOperationFormat)
       json must beAnInstanceOf[JsString]
 
-      val parsed = Json.fromJson[NsiRequesterMessage[NsiRequesterOperation]](json)(NsiRequesterOperationFormat)
+      val parsed =
+        Json.fromJson[NsiRequesterMessage[NsiRequesterOperation]](json)(NsiRequesterOperationFormat)
       parsed must beLike { case JsSuccess(m, _) =>
         m.headers.correlationId must beEqualTo(testHeaders.correlationId)
         m.body must beAnInstanceOf[ReserveConfirmed]
@@ -177,7 +180,9 @@ class MessageFormatsSpec extends org.specs2.mutable.Specification with org.specs
     }
 
     "parseJson throws on invalid JSON" in {
-      MessageData.parseJson[CorrelationId]("not-json") must throwA[com.fasterxml.jackson.core.JsonParseException]
+      MessageData.parseJson[CorrelationId]("not-json") must throwA[
+        com.fasterxml.jackson.core.JsonParseException
+      ]
     }
 
     "parseJson returns Failure for wrong type" in {

@@ -23,7 +23,7 @@ Compile / packageDoc / publishArtifact := false
 Test / doc / sources := Seq.empty
 Test / packageDoc / publishArtifact := false
 
-val playVersion = "3.0.5"
+val playVersion = "3.0.10"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "3.0.0",

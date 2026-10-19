@@ -1,6 +1,38 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:best-practices"
+  ],
+  "minimumReleaseAge": "8 days",
+  "internalChecksFilter": "strict",
+  "rebaseWhen": "behind-base-branch",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch",
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["pin", "digest", "pinDigest"],
+      "minimumReleaseAge": "0 days",
+      "automerge": true
+    },
+    {
+      "description": "Stay on the Scala 3.3 LTS line",
+      "matchPackageNames": ["org.scala-lang:scala3-library_3"],
+      "allowedVersions": "<3.4"
+    },
+    {
+      "description": "Play and play-json come from one Play release; update them together",
+      "matchPackageNames": ["org.playframework:play*"],
+      "groupName": "Play"
+    },
+    {
+      "description": "Safnari must follow a new Java major; it compiles against these classes",
+      "matchPackageNames": ["java-jdk"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
   ]
 }

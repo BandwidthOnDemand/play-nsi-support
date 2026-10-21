@@ -23,7 +23,7 @@ class StpSpec extends org.specs2.mutable.Specification with org.specs2.ScalaChec
 
   given Arbitrary[VlanRange] = Arbitrary(
     Gen
-      .nonEmptyListOf(for (a <- GenVlanId; b <- GenVlanId) yield Range.closed(a min b, a max b))
+      .nonEmptyListOf(for a <- GenVlanId; b <- GenVlanId yield Range.closed(a min b, a max b))
       .map(VlanRange.apply)
   )
 

@@ -24,7 +24,7 @@ package nl.surfnet.nsiv2
 package messages
 
 import com.google.common.collect.ImmutableRangeSet
-import com.google.common.collect.{Range as GRange}
+import com.google.common.collect.Range as GRange
 import com.google.common.collect.TreeRangeSet
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -153,7 +153,7 @@ case class Stp(identifier: String, labels: SortedMap[String, Option[String]] = S
   else
     labels.iterator
       .map {
-        case (label, None) => URLEncoder.encode(label, "UTF-8")
+        case (label, None)        => URLEncoder.encode(label, "UTF-8")
         case (label, Some(value)) =>
           s"${URLEncoder.encode(label, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
       }

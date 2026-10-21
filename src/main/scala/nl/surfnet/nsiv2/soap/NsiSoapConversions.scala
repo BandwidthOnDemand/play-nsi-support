@@ -221,8 +221,8 @@ object NsiSoapConversions:
   given Conversion[NsiProviderOperation, Element] =
     Conversion.build[NsiProviderOperation, Element] { operation =>
       marshal(operation match
-        case InitialReserve(body) => typesFactory.createReserve(body)
-        case ModifyReserve(body)  => typesFactory.createReserve(body)
+        case InitialReserve(body)        => typesFactory.createReserve(body)
+        case ModifyReserve(body)         => typesFactory.createReserve(body)
         case ReserveCommit(connectionId) =>
           typesFactory.createReserveCommit(new GenericRequestType().withConnectionId(connectionId))
         case ReserveAbort(connectionId) =>
@@ -272,8 +272,7 @@ object NsiSoapConversions:
               .withConnectionId(connectionId)
               .withStartResultId(if start.isDefined then start.get else null)
               .withEndResultId(if end.isDefined then end.get else null)
-          )
-      )
+          ))
     } {
       messageFactories(
         Map[String, NsiMessageParser[NsiProviderOperation]](
@@ -361,7 +360,7 @@ object NsiSoapConversions:
   private def toQueryType(
       ids: Option[Either[Seq[ConnectionId], Seq[GlobalReservationId]]]
   ): QueryType = ids match
-    case Some(Left(connectionIds)) => new QueryType().withConnectionId(connectionIds.asJava)
+    case Some(Left(connectionIds))         => new QueryType().withConnectionId(connectionIds.asJava)
     case Some(Right(globalReservationIds)) =>
       new QueryType().withGlobalReservationId(globalReservationIds.map(_.toASCIIString()).asJava)
     case None => new QueryType()
@@ -373,17 +372,17 @@ object NsiSoapConversions:
           typesFactory.createReserveConfirmed(
             new ReserveConfirmedType().withConnectionId(connectionId).withCriteria(criteria)
           )
-        case ReserveFailed(failure) => typesFactory.createReserveFailed(failure)
+        case ReserveFailed(failure)               => typesFactory.createReserveFailed(failure)
         case ReserveCommitConfirmed(connectionId) =>
           typesFactory.createReserveCommitConfirmed(
             new GenericConfirmedType().withConnectionId(connectionId)
           )
-        case ReserveCommitFailed(failure) => typesFactory.createReserveCommitFailed(failure)
+        case ReserveCommitFailed(failure)        => typesFactory.createReserveCommitFailed(failure)
         case ReserveAbortConfirmed(connectionId) =>
           typesFactory.createReserveAbortConfirmed(
             new GenericConfirmedType().withConnectionId(connectionId)
           )
-        case ReserveTimeout(timeout) => typesFactory.createReserveTimeout(timeout)
+        case ReserveTimeout(timeout)          => typesFactory.createReserveTimeout(timeout)
         case ProvisionConfirmed(connectionId) =>
           typesFactory.createProvisionConfirmed(
             new GenericConfirmedType().withConnectionId(connectionId)
@@ -415,12 +414,11 @@ object NsiSoapConversions:
           typesFactory.createQueryResultConfirmed(
             new QueryResultConfirmedType().withResult(results.asJava)
           )
-        case ErrorReply(error) => typesFactory.createError(error)
+        case ErrorReply(error)                  => typesFactory.createError(error)
         case DataPlaneStateChange(notification) =>
           typesFactory.createDataPlaneStateChange(notification)
         case ErrorEvent(error)               => typesFactory.createErrorEvent(error)
-        case MessageDeliveryTimeout(timeout) => typesFactory.createMessageDeliveryTimeout(timeout)
-      )
+        case MessageDeliveryTimeout(timeout) => typesFactory.createMessageDeliveryTimeout(timeout))
     } {
       messageFactories(
         Map[String, NsiMessageParser[NsiRequesterOperation]](
@@ -729,7 +727,7 @@ object NsiSoapConversions:
     } match
       case Vector(e) => Success(Some(e))
       case Vector()  => Success(None)
-      case _ =>
+      case _         =>
         Failure(
           ErrorMessage(
             s"multiple elements '$namespaceUri:$localName' in '${parent.getLocalName}', expected exactly one"

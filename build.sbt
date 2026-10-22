@@ -23,7 +23,7 @@ Compile / packageDoc / publishArtifact := false
 Test / doc / sources := Seq.empty
 Test / packageDoc / publishArtifact := false
 
-val playVersion = "3.0.10"
+val playVersion = "3.0.12"
 
 libraryDependencies ++= Seq(
   "nl.surfnet.bod" % "bod-nsi" % "3.0.0",
@@ -31,7 +31,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "2.3.0",
   "org.playframework" %% "play" % playVersion,
   "org.playframework" %% "play-jdbc" % playVersion,
-  "org.playframework" %% "play-json" % "3.0.4",
+  "org.playframework" %% "play-json" % "3.0.6",
   "org.playframework.anorm" %% "anorm" % "3.1.0",
   "org.playframework" %% "play-specs2" % playVersion % "test",
   "org.specs2" %% "specs2-scalacheck" % "4.20.7" % "test",

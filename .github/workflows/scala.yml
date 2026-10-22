@@ -23,6 +23,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Start PostgreSQL
+      run: sudo systemctl start postgresql.service
+    - name: Initialize PostgreSQL database
+      run: |
+        sudo -u postgres psql -c "CREATE USER \"play-nsi-support-user\" PASSWORD 'password'"
+        sudo -u postgres createdb -O play-nsi-support-user play-nsi-support-test
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - name: Set up JDK 21
       uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6

@@ -1,13 +1,12 @@
 package nl.surfnet.nsiv2.persistence
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Prop
 import org.scalacheck.Shrink
-import play.api.db.Databases
-import play.api.test.*
 import nl.surfnet.nsiv2.messages.CorrelationId
 import nl.surfnet.nsiv2.soap.Conversion
 import play.api.db.Database
@@ -23,77 +22,82 @@ abstract class MessageStoreSpecification
   given MessageConversion: Conversion[Message, MessageData]
   given MessageGenerator: Gen[Message]
 
-  given Arbitrary[Message] = Arbitrary(MessageGenerator)
-  given Arbitrary[(Message, MessageData)] = Arbitrary(for
-    message <- MessageGenerator
-    data <- MessageConversion(message).map(Gen.const).getOrElse(Gen.fail)
-  yield (message, data))
+  /** A database with the `connections` and `messages` tables. */
+  def database: Database
 
+  given Arbitrary[Message] = Arbitrary(MessageGenerator)
   given Shrink[Message] = Shrink(_ => Stream.empty)
 
-  class Fixture extends WithApplication():
-    lazy val database: Database = Databases.inMemory()
-    lazy val requesterNsa = "requester_msa"
-    lazy val timestamp: Instant = Instant.now()
-    lazy val aggregatedConnectionId = newConnectionId
-    lazy val messageStore: MessageStore[Message] =
-      val s = new MessageStore[Message](database)
-      s.create(aggregatedConnectionId, timestamp, requesterNsa)
-      s
+  private lazy val messageStore = new MessageStore[Message](database)
+
+  class Fixture:
+    val requesterNsa = "requester_nsa"
+    // The store keeps milliseconds.
+    val timestamp: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+    val connectionId = newConnectionId
+    messageStore.create(connectionId, timestamp, requesterNsa)
+
+    def store(inbound: Message, outbound: Message*): Unit =
+      messageStore.storeInboundWithOutboundMessages(connectionId, timestamp, inbound, outbound)
+    def messages: Seq[Message] = messageStore.findByConnectionId(connectionId).map(_.message)
+    def delete(): Unit = messageStore.delete(connectionId, timestamp)
 
   "MessageStore" should {
-    "fail to store message for unknown connection" in new Fixture():
-      override def running() = prop { (message: Message) =>
-        val unknownConnectionId = newConnectionId
+    "fail to store message for unknown connection" in prop { (message: Message) =>
+      messageStore.storeInboundWithOutboundMessages(
+        newConnectionId,
+        Instant.now(),
+        message,
+        Seq.empty
+      ) must throwA[IllegalArgumentException]
+    }.set(minTestsOk = 1)
 
-        messageStore.storeInboundWithOutboundMessages(
-          unknownConnectionId,
-          timestamp,
-          message,
-          Seq.empty
-        ) must throwA[IllegalArgumentException]
-      }.set(minTestsOk = 1)
+    "fail to store a message for a deleted connection" in prop { (message: Message) =>
+      val f = Fixture()
+      f.delete()
+      f.store(message) must throwA[IllegalArgumentException]
+    }.set(minTestsOk = 1)
 
-    "fail to store a message for a deleted connection" in new Fixture():
-      override def running() = prop { (message: Message) =>
-        messageStore.delete(aggregatedConnectionId, timestamp)
+    "append new messages at the end" in {
+      val f = Fixture()
+      prop { (message: Message) =>
+        f.store(message)
 
-        messageStore.storeInboundWithOutboundMessages(
-          aggregatedConnectionId,
-          timestamp,
-          message,
-          Seq.empty
-        ) must throwA[IllegalArgumentException]
-      }.set(minTestsOk = 1)
-
-    "append new messages at the end" in new Fixture:
-      override def running() = prop { (message: Message) =>
-        messageStore.storeInboundWithOutboundMessages(
-          aggregatedConnectionId,
-          timestamp,
-          message,
-          Seq.empty
-        ) must not(throwA[Exception])
-
-        val loaded = messageStore.findByConnectionId(aggregatedConnectionId)
-        loaded.map(_.createdAt).lastOption must beSome(timestamp)
+        val loaded = messageStore.findByConnectionId(f.connectionId)
+        loaded.map(_.createdAt).lastOption must beSome(f.timestamp)
         loaded.map(_.message).lastOption aka "last appended message" must beSome(message)
       }.set(minTestsOk = 10)
+    }
 
-    "retrieve based on correlation id" in new Fixture:
-      override def running() = prop { (message: Message) =>
+    "store outbound messages after their inbound message" in {
+      val f = Fixture()
+      prop { (inbound: Message, outbound: Message) =>
+        f.store(inbound, outbound)
+        f.messages.takeRight(2) must_== Seq(inbound, outbound)
+      }.set(minTestsOk = 10)
+    }
+
+    "retrieve based on correlation id" in {
+      val f = Fixture()
+      prop { (message: Message) =>
         withCorrelationId(message) { correlationId =>
-          messageStore.storeInboundWithOutboundMessages(
-            aggregatedConnectionId,
-            timestamp,
-            message,
-            Seq.empty
-          ) must not(throwA[Exception])
+          f.store(message)
 
-          val loaded = messageStore.findByCorrelationId(requesterNsa, correlationId)
+          val loaded = messageStore.findByCorrelationId(f.requesterNsa, correlationId)
           loaded.map(_.message).lastOption aka "message" must beSome(message)
         }
       }.set(minTestsOk = 10)
+    }
+
+    "load messages of live connections only" in prop { (message: Message) =>
+      val live, deleted = Fixture()
+      Seq(live, deleted).foreach(_.store(message))
+      deleted.delete()
+
+      val loaded = messageStore.loadEverything().toMap
+      loaded.get(live.connectionId).map(_.last.message) must beSome(message)
+      loaded must not(haveKey(deleted.connectionId))
+    }.set(minTestsOk = 5)
   }
 
   private def withCorrelationId(message: Message)(prop: CorrelationId => Prop): Prop =

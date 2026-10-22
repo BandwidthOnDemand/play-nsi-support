@@ -32,7 +32,7 @@ libraryDependencies ++= Seq(
   "org.playframework" %% "play" % playVersion,
   "org.playframework" %% "play-jdbc" % playVersion,
   "org.playframework" %% "play-json" % "3.0.4",
-  "org.playframework.anorm" %% "anorm" % "2.7.0",
+  "org.playframework.anorm" %% "anorm" % "3.1.0",
   "org.playframework" %% "play-specs2" % playVersion % "test",
   "org.specs2" %% "specs2-scalacheck" % "4.20.7" % "test",
   // plexus-utils 4 moved its xml classes here; maven-model under play-test still needs them.

@@ -4,7 +4,7 @@ organization := "nl.surfnet"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-scalaVersion := "3.3.4"
+scalaVersion := "3.3.8"
 
 scalacOptions ++= Seq(
   "-deprecation",

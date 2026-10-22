@@ -26,7 +26,7 @@ Test / packageDoc / publishArtifact := false
 val playVersion = "3.0.12"
 
 libraryDependencies ++= Seq(
-  "nl.surfnet.bod" % "bod-nsi" % "3.0.0",
+  "nl.surfnet.bod" % "bod-nsi" % "3.0.1",
   "org.glassfish.jaxb" % "jaxb-runtime" % "4.0.9",
   "org.scala-lang.modules" %% "scala-xml" % "2.5.0",
   "org.playframework" %% "play" % playVersion,

@@ -7,7 +7,6 @@ import net.nordu.namespaces._2013._12.gnsbod.ConnectionType
 import nl.surfnet.bod.nsi.Nillable
 import nl.surfnet.nsiv2.utils.*
 import oasis.names.tc.saml._2_0.assertion.AttributeType
-import org.ogf.schemas.nsi._2013._12.connection.types.ObjectFactory
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationConfirmCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReservationRequestCriteriaType
 import org.ogf.schemas.nsi._2013._12.connection.types.ReserveType
@@ -35,22 +34,13 @@ object Generators:
     Gen.oneOf("https://www.host.invalid/foo/bar", "https://localhost:8443/").map(URI.create)
   )
 
-  private val scheduleTypes = new ObjectFactory()
-
   given Arbitrary[ScheduleType] = Arbitrary(
     for
       startTime <- arbitrary[Nillable[XMLGregorianCalendar]]
       endTime <- arbitrary[Nillable[XMLGregorianCalendar]]
     yield new ScheduleType()
       .withStartTime(startTime)
-      // Not withEndTime(Nillable): bod-nsi 3.0.0 sets the start time there.
-      .withXmlEndTime(
-        endTime.fold2(
-          scheduleTypes.createScheduleTypeEndTime,
-          null,
-          scheduleTypes.createScheduleTypeEndTime(null)
-        )
-      )
+      .withEndTime(endTime)
   )
 
   given Arbitrary[XMLGregorianCalendar] = Arbitrary(

@@ -53,8 +53,7 @@ class ReservationRequestCriteriaTypeOpsSpec
 
       "overwrite null end time" in prop {
         (request: ReservationRequestCriteriaType, confirm: ReservationConfirmCriteriaType) =>
-          // Not withEndTime(Nillable): bod-nsi 3.0.0 sets the start time there.
-          request.getSchedule.setXmlEndTime(null)
+          request.getSchedule.withEndTime(Nillable.absent[XMLGregorianCalendar])
 
           request.toModifiedConfirmCriteria(confirm).get.getSchedule.getEndTime must_== Nillable
             .absent[XMLGregorianCalendar]

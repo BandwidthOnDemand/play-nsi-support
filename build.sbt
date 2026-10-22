@@ -58,7 +58,7 @@ dependencyOverrides ++= Seq(
   "org.jsoup" % "jsoup" % "1.23.2",
   // Scala 3 compiler/scaladoc toolchain only (scalaInstance), never on the app classpath.
   "org.jline" % "jline-reader" % "3.30.15",
-  "org.jline" % "jline-terminal" % "3.30.15",
+  "org.jline" % "jline-terminal" % "4.4.8",
   "org.jline" % "jline-terminal-jni" % "3.30.15",
   "org.jline" % "jline-native" % "3.30.15",
   // Selenium/HtmlUnit test-only deps (via play-test's WithBrowser helper, unused by this

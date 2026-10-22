@@ -60,7 +60,7 @@ dependencyOverrides ++= Seq(
   "org.jline" % "jline-reader" % "3.30.15",
   "org.jline" % "jline-terminal" % "3.30.15",
   "org.jline" % "jline-terminal-jni" % "3.30.15",
-  "org.jline" % "jline-native" % "3.30.15",
+  "org.jline" % "jline-native" % "4.4.8",
   // Selenium/HtmlUnit test-only deps (via play-test's WithBrowser helper, unused by this
   // library): opentelemetry-api and jetty-http can move within their own line without
   // disturbing the selenium-api version htmlunit-driver 4.13.0 was built against.

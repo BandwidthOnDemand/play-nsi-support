@@ -19,6 +19,19 @@
       "automerge": true
     },
     {
+      "description": "sbt-plugin probes Central at a path that 404s, so a 429 there aborts the run; read maven-metadata.xml instead",
+      "matchDatasources": ["sbt-plugin"],
+      "matchPackageNames": ["!com.codecommit:sbt-github-packages"],
+      "overrideDatasource": "maven",
+      "overridePackageName": "{{packageName}}_2.12_1.0"
+    },
+    {
+      "description": "Not on Maven Central; look it up on the sbt plugin repository only",
+      "matchDatasources": ["sbt-plugin"],
+      "matchPackageNames": ["com.codecommit:sbt-github-packages"],
+      "registryUrls": ["https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases"]
+    },
+    {
       "description": "Stay on the Scala 3.3 LTS line",
       "matchPackageNames": ["org.scala-lang:scala3-library_3"],
       "allowedVersions": "<3.4"

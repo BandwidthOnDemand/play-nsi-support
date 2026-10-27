@@ -3,10 +3,10 @@ logLevel := Level.Warn
 
 addDependencyTreePlugin
 
-addSbtPlugin("com.github.sbt" % "sbt-release" % "1.4.0")
+addSbtPlugin("com.github.sbt" % "sbt-release" % "1.5.0")
 
 addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.5.3")
 
 addSbtPlugin("com.github.sbt" % "sbt-header" % "5.11.0")
 
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.6.2")

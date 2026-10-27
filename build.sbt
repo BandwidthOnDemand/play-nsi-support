@@ -44,12 +44,12 @@ libraryDependencies ++= Seq(
 ThisBuild / excludeDependencies += ExclusionRule("io.appium")
 
 dependencyOverrides ++= Seq(
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.22.3",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.3",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.22.4",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.4",
   "com.fasterxml.jackson.core" % "jackson-annotations" % "2.22",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.22.3",
-  "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.22.3",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.3.1",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % "2.22.4",
+  "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.22.4",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.4",
   "commons-beanutils" % "commons-beanutils" % "1.11.0",
   "org.apache.commons" % "commons-lang3" % "3.21.0",
   "org.codehaus.plexus" % "plexus-utils" % "4.1.0",

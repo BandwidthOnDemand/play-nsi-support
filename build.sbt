@@ -37,7 +37,7 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-scalacheck" % "4.23.0" % "test",
   "org.postgresql" % "postgresql" % "42.7.14" % "test",
   // plexus-utils 4 moved its xml classes here; maven-model under play-test still needs them.
-  "org.codehaus.plexus" % "plexus-xml" % "3.1.0" % "test"
+  "org.codehaus.plexus" % "plexus-xml" % "3.1.1" % "test"
 )
 
 // play-test's unused WithBrowser helper pulls Appium through FluentLenium.
@@ -52,9 +52,9 @@ dependencyOverrides ++= Seq(
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.23.0",
   "commons-beanutils" % "commons-beanutils" % "1.11.0",
   "org.apache.commons" % "commons-lang3" % "3.22.0",
-  "org.codehaus.plexus" % "plexus-utils" % "4.1.0",
-  "ch.qos.logback" % "logback-core" % "1.6.6",
-  "ch.qos.logback" % "logback-classic" % "1.6.6",
+  "org.codehaus.plexus" % "plexus-utils" % "4.2.0",
+  "ch.qos.logback" % "logback-core" % "1.6.7",
+  "ch.qos.logback" % "logback-classic" % "1.6.7",
   "at.yawk.lz4" % "lz4-java" % "1.14.0",
   "org.jsoup" % "jsoup" % "1.24.1",
   // Scala 3 compiler/scaladoc toolchain only (scalaInstance), never on the app classpath.
